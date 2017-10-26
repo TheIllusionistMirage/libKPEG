@@ -1,0 +1,12 @@
+*.kdev4
+.kdev*
+.kdev4/
+*~
+build/
+
+# Codeblocks files
+bin/
+obj/
+*.cbp
+*.depend
+*.layout
