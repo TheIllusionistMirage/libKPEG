@@ -117,6 +117,12 @@ namespace kpeg
 
     const bool Image::dumpRawData( const std::string& filename )
     {
+        if ( m_pixelPtr == nullptr )
+        {
+            LOG(Logger::Level::ERROR) << "Unable to create dump file \'" + filename + "\', Invalid pixel pointer" << std::endl;
+            return false;
+        }
+        
         std::ofstream dumpFile( filename, std::ios::out );
         
         if ( !dumpFile.is_open() || !dumpFile.good() )
@@ -126,15 +132,15 @@ namespace kpeg
         }
         
         dumpFile << "K-PEG Raw Image Data" << std::endl;
-        dumpFile << std::to_string(getWidth()) << std::to_string(getHeight()) << std::endl;
+        dumpFile << std::to_string(getWidth()) << ","<< std::to_string(getHeight()) << std::endl;
         
         for ( auto&& row : *m_pixelPtr )
         {
             for ( auto&& pixel : row )
-                dumpFile << pixel.comp[Components::COMP1] << ","
-                         << pixel.comp[Components::COMP2] << ","
-                         << pixel.comp[Components::COMP3] << " ";
-            std::cout << std::endl;
+                dumpFile << (int)pixel.comp[Components::COMP1] << ","
+                         << (int)pixel.comp[Components::COMP2] << ","
+                         << (int)pixel.comp[Components::COMP3] << " ";
+            dumpFile << std::endl;
         }
         
         LOG(Logger::Level::INFO) << "Raw image data dumped to file: \'" + filename + "\'." << std::endl;

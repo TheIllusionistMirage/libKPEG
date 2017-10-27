@@ -83,6 +83,9 @@ namespace kpeg
             
             //
             
+            // Convert bytes of the form XXFF00YY to just XXFFYY
+            void byteStuffScanData();
+            
             /**
              * @brief Decode the RLE-Huffman encoded image pixel data
              * @author Koushtav Chakrabarty (koushtav@fleptic.eu)

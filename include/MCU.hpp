@@ -116,6 +116,8 @@ namespace kpeg
             
             static std::vector<std::vector<UInt16>> m_QTables;
             
+            static int DCDiff[3];
+            
             // For storing the IDCT coefficients before level shifting
             std::array< std::array< std::array< float, 8 >, 8 > , 3 > icoeffs;
     };

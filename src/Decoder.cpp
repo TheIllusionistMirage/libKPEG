@@ -69,12 +69,13 @@ namespace kpeg
 //             case JFIF_EOI       :   LOG(Logger::Level::INFO) << "Found segment, End of Image (FFD9)" << std::endl;  return ResultCode::SUCCESS;
         }
         
-        return ResultCode::DECODE_INCOMPLETE;
+        //return ResultCode::DECODE_INCOMPLETE;
+        return ResultCode::SUCCESS;
     }
     
     bool JPEGDecoder::dumpRawData()
     {
-        
+        m_image.dumpRawData( "dump.txt" );
     }
     
     JPEGDecoder::ResultCode JPEGDecoder::decodeImageFile()
@@ -102,9 +103,14 @@ namespace kpeg
                 
                 if ( code == ResultCode::SUCCESS )
                     continue;
-                else if ( code == ResultCode::TERMINATE || code == ResultCode::DECODE_INCOMPLETE )
+                else if ( code == ResultCode::TERMINATE )
                 {
                     status = ResultCode::TERMINATE;
+                    break;
+                }
+                else if ( code == ResultCode::DECODE_INCOMPLETE )
+                {
+                    status = ResultCode::DECODE_INCOMPLETE;
                     break;
                 }
             }
@@ -123,6 +129,11 @@ namespace kpeg
         else if ( status == ResultCode::TERMINATE )
         {
             LOG(Logger::Level::INFO) << "Terminated decoding process [NOT-OK]." << std::endl;
+        }
+        
+        else if ( status == ResultCode::DECODE_INCOMPLETE )
+        {
+            LOG(Logger::Level::INFO) << "Decoding process incomplete [NOT-OK]." << std::endl;
         }
         
         return status;
@@ -580,6 +591,40 @@ namespace kpeg
         m_image.setComment( comment );
     }
     
+    void JPEGDecoder::byteStuffScanData()
+    {
+        if ( m_scanData.empty() )
+        {
+            LOG(Logger::Level::ERROR) << " [ FATAL ] Invalid image scan data" << std::endl;
+            return;
+        }
+        
+        LOG(Logger::Level::DEBUG) << "Byte stuffing image scan data..." << std::endl;
+        
+        for ( unsigned i = 0; i <= m_scanData.size() - 8; i += 8 )
+        {
+            std::string byte = m_scanData.substr( i, 8 );
+            
+            if ( byte == "11111111" )
+            {
+                if ( i + 8 < m_scanData.size() - 8 )
+                {
+                    std::string nextByte = m_scanData.substr( i + 8, 8 );
+                    
+                    if ( nextByte == "00000000" )
+                    {
+                        m_scanData.erase( i + 8, 8 );
+                    }
+                    else continue;
+                }
+                else
+                    continue;
+            }
+        }
+        
+        LOG(Logger::Level::DEBUG) << "Finished byte stuffing image scan data [OK]" << std::endl;
+    }
+    
     void JPEGDecoder::decodeScanData()
     {
         if ( m_scanData.empty() )
@@ -588,6 +633,8 @@ namespace kpeg
             return;
         }
         
+        byteStuffScanData();
+        
         LOG(Logger::Level::DEBUG) << "Decoding image scan data..." << std::endl;
         
         const char* component[] = { "Y (Luminance)", "Cb (Chrominance)", "Cr (Chrominance)" };
@@ -595,14 +642,11 @@ namespace kpeg
         
         int MCUCount = ( m_image.getWidth() * m_image.getHeight() ) / 64;
         
-        int maxBitLength = m_scanData.size();
+//         int maxBitLength = m_scanData.size();
         
         m_MCU.clear();
         //m_MCU.resize( MCUCount );
         LOG(Logger::Level::DEBUG) << "MCU count: " << MCUCount << std::endl;
-        
-        // The run-length coding after decoding the Huffman data
-        std::array<std::vector<int>, 3> RLE;
         
         int k = 0; // The index of the next bit to be scanned
         
@@ -611,9 +655,8 @@ namespace kpeg
         {
             LOG(Logger::Level::DEBUG) << "Decoding MCU-" << i + 1 << "..." << std::endl;
             
-            RLE[0].clear();
-            RLE[1].clear();
-            RLE[2].clear();
+            // The run-length coding after decoding the Huffman data
+            std::array<std::vector<int>, 3> RLE;            
             
             // For each component Y, Cb & Cr, decode 1 DC
             // coefficient and then decode 63 AC coefficients.
@@ -623,6 +666,7 @@ namespace kpeg
             // component contains a trail of 0s, AC coefficients
             // are decoded till, either an EOB (End of block) is
             // encountered or 63 AC coefficients have been decoded.
+            
             for ( auto compID = 0; compID < 3; ++compID )
             {
                 std::string bitsScanned = ""; // Initially no bits are scanned
@@ -633,14 +677,14 @@ namespace kpeg
                 int HuffTableID = compID == 0 ? 0 : 1;
                 
                 while ( 1 )
-                {
+                {       
                     bitsScanned += m_scanData[k];
                     auto value = m_huffmanTree[HT_DC][HuffTableID].contains( bitsScanned );
                     
                     if ( !isStringWhiteSpace( value ) )
                     {
                         if ( value != "EOB" )
-                        {
+                        {   
                             int zeroCount = UInt8( std::stoi( value ) ) >> 4 ;
                             int category = UInt8( std::stoi( value ) ) & 0x0F;
                             int DCCoeff = bitStringtoValue( m_scanData.substr( k + 1, category ) );
@@ -675,9 +719,17 @@ namespace kpeg
                 // Then decode the AC coefficients
                 LOG(Logger::Level::DEBUG) << "Decoding MCU-" << i + 1 << ": " << component[compID] << "/" << type[HT_AC] << std::endl;
                 bitsScanned = "";
-                
+                int ACCodesCount = 0;
+                                
                 while ( 1 )
-                {
+                {   
+                    // If 63 AC codes have been encountered, this block is done, move onto next block;
+                    
+                    if ( ACCodesCount  == 63 )
+                    {
+                        break;
+                    }
+                    
                     // Append the k-th bit to the bits scanned so far
                     bitsScanned += m_scanData[k];
                     auto value = m_huffmanTree[HT_AC][HuffTableID].contains( bitsScanned );
@@ -690,13 +742,15 @@ namespace kpeg
                             int category = UInt8( std::stoi( value ) ) & 0x0F;
                             int ACCoeff = bitStringtoValue( m_scanData.substr( k + 1, category ) );
                             
-                            //LOG(Logger::Level::DEBUG) << "MCU-" << i + 1 << ": " << component[compID] << "/" << type[HT_AC] << ": ( " << zeroCount << ", " << ACCoeff << " )" << std::endl;
+                            //LOG(Logger::Level::DEBUG) << "AC Code#: " << ACCodesCount + 1 << ", MCU-" << i + 1 << ": " << component[compID] << "/" << type[HT_AC] << ": ( " << zeroCount << ", " << ACCoeff << " )" << std::endl;
                             
                             k += category + 1;
                             bitsScanned = "";
                             
                             RLE[compID].push_back( zeroCount );
                             RLE[compID].push_back( ACCoeff );
+                            
+                            ACCodesCount += zeroCount + 1;
                         }
                         
                         else
@@ -717,136 +771,15 @@ namespace kpeg
                 }
             }
             
-            // Construct the MCU block from the RLE to a 8x8 matrix
+            // Construct the MCU block from the RLE &
+            // quantization tables to a 8x8 matrix
             m_MCU.push_back( MCU( RLE, m_QTables ) );
             
             LOG(Logger::Level::DEBUG) << "Finished decoding MCU-" << i + 1 << " [OK]" << std::endl;
         }
         
         // The remaining bits, if any, in the scan data are discarded as
-        // they're added byte align the scan data
-        
-        /////////////////
-        
-/*//         // MCU-1: Y/DC
-//         int i = 0;
-//         for ( ; i < m_scanData.size(); ++i )
-//         {
-//             bitValue += m_scanData[i];
-//             auto val = m_huffmanTree[0][0].contains( bitValue );
-//             
-//             if ( !isStringWhiteSpace( val ) )
-//             {
-//                 int numZeros = UInt8( std::stoi( val ) ) >> 4;
-//                 int DCYcat = UInt8( std::stoi( val ) ) & 0x0F;
-//                 int DCY = bitStringtoValue( m_scanData.substr( i + 1, DCYcat ) );
-//                 
-//                 LOG(Logger::Level::DEBUG) << "MCU-1, Y/DC coefficient: ( " << numZeros << ", " << DCY << " )" << std::endl;
-//                 
-//                 i = i + DCYcat + 1;
-//                 bitValue = "";
-//                 
-//                 break;
-//             }
-//             else
-//                 continue;
-//         }
-//         
-//         // MCU: 1: Y/AC
-//         
-//         for ( ; i < m_scanData.size(); ++i )
-//         {
-//             bitValue += m_scanData[i];
-//             auto val = m_huffmanTree[1][0].contains( bitValue );
-//             
-//             if ( !isStringWhiteSpace( val ))
-//             {
-//                 if ( val != "EOB" )
-//                 {
-//                     int numZeros = UInt8( std::stoi( val ) ) >> 4;
-//                     int ACYcat = UInt8( std::stoi( val ) ) & 0x0F;
-//                     int ACY = bitStringtoValue( m_scanData.substr( i + 1, ACYcat ) );
-//                     
-//                     LOG(Logger::Level::DEBUG) << "MCU-1, Y/AC coefficient: ( " << numZeros << ", " << ACY << " )" << std::endl;
-//                     
-//                     i = i + ACYcat + 1;
-//                     bitValue = "";
-//                 }
-//                 else
-//                 {
-//                     LOG(Logger::Level::DEBUG) << "MCU, Y/AC: EOB encountered" << std::endl;
-//                     bitValue = "";
-//                     break;
-//                 }
-//             }
-//         }*/
-
-
-////////////////////////
-        
-        
-        
-/*//         for ( auto i = 0; i < m_scanData.size(); )
-//         {
-//             bitValue += m_scanData[i];
-//             auto val = m_huffmanTree[coeffType][compID].contains( bitValue );
-//             
-//             if ( !isStringWhiteSpace( val ) )
-//             {
-//                 if ( val == "0" )
-//                 {
-//                     LOG(Logger::Level::DEBUG) << "EOB, " << component[compID] << "/" << type[coeffType] << std::endl;
-//                     
-//                     coeffType = ( coeffType + 1) % 2;
-//                     
-//                     if ( coeffType == 0 )
-//                         compID = ( compID + 1) % 3;
-//                     
-//                     bitValue = "";
-//                     i++;
-//                     
-//                     continue;
-//                 }
-//                 else
-//                 {
-//                     // value contains RRRRSSSS
-//                     // RRRR: Zero run length
-//                     // SSSS: Range of magnitudes (category)
-//                     UInt8 value = std::stoi( val );
-//                     UInt8 zeroCount = value >> 4;
-//                     UInt8 category = value & 0x0F;
-//                     
-//                     std::string bitString =  m_scanData.substr( i + 1, category ); 
-//                     Int16 AC_Coeff = bitStringtoValue( bitString );
-//                     
-//                     coeffs.push_back( zeroCount );
-//                     coeffs.push_back( AC_Coeff );
-//                     
-//                     i += category + 1;
-//                     
-//                     LOG(Logger::Level::DEBUG) << "Found: " << bitValue << ", Zero-Count: " << (int)zeroCount << ", Range: " << (int)AC_Coeff << std::endl;
-//                     //break;
-//                     
-//                     bitValue = "";
-//                     continue;
-//                 }
-//             }
-//             
-//             ++i;
-//             
-// //             LOG(Logger::Level::DEBUG) << m_scanData[i] << std::endl;
-//             
-// //             for ( auto compID = 0; compID < 3; ++compID )
-// //             {
-// //                 for ( auto coeffType = 0; coeffType < 2; ++coeffType )
-// //                 {
-// //                     
-// //                 }
-// //             }
-//         }*/
-        
-//         for ( auto i = 0; i < coeffs.size(); i += 2 )
-//             LOG(Logger::Level::DEBUG) << "Zeros: " << coeffs[i] << ", Entropy: " << coeffs[i + 1] << std::endl;
+        // they're added byte align the scan data.
         
         LOG(Logger::Level::DEBUG) << "Finished decoding image scan data [OK]" << std::endl;
     }

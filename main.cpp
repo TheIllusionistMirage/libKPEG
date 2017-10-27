@@ -90,12 +90,13 @@ int main( int argc, char** argv )
         kpeg::JPEGDecoder decoder;
         //decoder.open(argv[1]);
         //decoder.open("sample2.jpg");
-        decoder.open("block.jpg");
+        decoder.open("block-x.jpg");
         //decoder.printDetectedSegmentNames();
         if ( decoder.decodeImageFile() == kpeg::JPEGDecoder::ResultCode::DECODE_DONE )
         {
             decoder.displayImage();
         }
+        decoder.dumpRawData();
         //decoder.close();
          
         ////////////////////////////

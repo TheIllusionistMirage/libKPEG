@@ -9,6 +9,7 @@ namespace kpeg
 {
     int MCU::m_MCUCount = 0;
     std::vector<std::vector<UInt16>> MCU::m_QTables = {};
+    int MCU::DCDiff[3] = { 0, 0, 0 };
     
     MCU::MCU()
     {   
@@ -45,7 +46,7 @@ namespace kpeg
         
         for ( int compID = 0; compID < 3; compID++ )
         {
-            LOG(Logger::Level::DEBUG) << "Constructing matrix for: MCU-" << m_MCUCount << ": " << component[compID] << "..." << std::endl;
+            //LOG(Logger::Level::DEBUG) << "Constructing matrix for: MCU-" << m_MCUCount << ": " << component[compID] << "..." << std::endl;
             
             // Initialize with all zeros
             std::array<int, 64> zzOrder;            
@@ -60,6 +61,10 @@ namespace kpeg
                 j += compRLE[compID][i] + 1; // Skip the number of positions containing zeros
                 zzOrder[j] = compRLE[compID][i + 1];
             }
+            
+            // DC_i = DC_i-1 + DC-difference
+            DCDiff[compID] += zzOrder[0];
+            zzOrder[0] = DCDiff[compID]; 
             
             int QIndex = compID == 0 ? 0 : 1;
             for ( auto i = 0; i < 64; ++i )
