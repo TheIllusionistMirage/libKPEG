@@ -1,6 +1,7 @@
 #include <string>
 #include <sstream>
 #include <cmath>
+#include <iomanip>
 
 #include "MCU.hpp"
 #include "Logger.hpp"
@@ -28,18 +29,18 @@ namespace kpeg
         
         LOG(Logger::Level::DEBUG) << "Constructing MCU: " << m_MCUCount << "..." << std::endl;
         
-//         for ( auto&& rle : compRLE )
-//         {
-//             std::string rleStr = "";
-//             for ( auto v = 0; v < rle.size(); v += 2 )
-//             {
-//                 std::stringstream ss;
-//                 ss << "(" << rle[v] << ", " << rle[v + 1] << ") ";
-//                 rleStr += ss.str();
-//             }
-//             
-//             LOG(Logger::Level::DEBUG) << "RLE decoded data: " << rleStr << std::endl;
-//         }
+        for ( auto&& rle : compRLE )
+        {
+            std::string rleStr = "";
+            for ( auto v = 0; v < rle.size(); v += 2 )
+            {
+                std::stringstream ss;
+                ss << "(" << rle[v] << ", " << rle[v + 1] << ") ";
+                rleStr += ss.str();
+            }
+            
+            LOG(Logger::Level::DEBUG) << "RLE decoded data: " << rleStr << std::endl;
+        }
         
         const char* component[] = { "Y (Luminance)", "Cb (Chrominance)", "Cr (Chrominance)" };
         const char* type[] = { "DC", "AC" };    
@@ -64,7 +65,7 @@ namespace kpeg
             
             // DC_i = DC_i-1 + DC-difference
             DCDiff[compID] += zzOrder[0];
-            zzOrder[0] = DCDiff[compID]; 
+            zzOrder[0] = DCDiff[compID];
             
             int QIndex = compID == 0 ? 0 : 1;
             for ( auto i = 0; i < 64; ++i )
@@ -81,9 +82,24 @@ namespace kpeg
 //             for ( auto&& row : m_8x8block[compID] )
 //             {
 //                 for ( auto&& val : row )
-//                     std::cout << val << " ";
+//                     std::cout << val << "\t";
 //                 std::cout << std::endl;
 //             }
+//             std::cout << std::endl;
+
+//             std::string matrix = "";
+//             for ( auto&& row : m_8x8block[compID] )
+//             {
+//                 for ( auto&& val : row )
+//                 {
+//                     std::stringstream ss;
+//                     ss << std::setw(7) << std::setfill(' ') << val << "";
+//                     matrix += ss.str();
+//                 }
+//                 matrix += "\n";
+//             }
+//             
+//             LOG(Logger::Level::DEBUG) << "DCT Matrix: " << component[compID] << ":-\n" << matrix << std::endl;
         }
         
         computeIDCT();
@@ -126,8 +142,10 @@ namespace kpeg
                     float sum = 0.0;
                     
                     for ( int u = 0; u < 8; ++u )
+                    //for ( int v = 0; v < 8; ++v )
                     {
                         for ( int v = 0; v < 8; ++v )
+                        //for ( int u = 0; u < 8; ++u )
                         {
                             float Cu = u == 0 ? 1.0 / std::sqrt(2.0) : 1.0;
                             float Cv = v == 0 ? 1.0 / std::sqrt(2.0) : 1.0;
@@ -147,7 +165,8 @@ namespace kpeg
 //             for ( auto&& row : mat )
 //             {
 //                 for ( auto&& v : row )
-//                     std::cout << std::roundl( v ) + 128 << "\t";
+//                     //std::cout << std::roundl( v ) + 128 << "\t";
+//                     std::cout << std::roundl( v ) << "\t";
 //                 std::cout << std::endl;
 //             }
 //             std::cout << std::endl;

@@ -62,6 +62,12 @@ namespace kpeg
                     if ( event.key.code == sf::Keyboard::Escape )
                         m_window.close();
                 }
+                
+//                 else if ( event.type == sf::Event::MouseButtonPressed )
+//                 {
+//                     auto mousePos = sf::Mouse::getPosition(m_window);
+//                     std::cout << "Mouse Position: ( " << mousePos.x << ", " << mousePos.y << ")" << std::endl;
+//                 }
             }
             
             m_window.clear( sf::Color::Black );

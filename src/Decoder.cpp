@@ -687,6 +687,7 @@ namespace kpeg
                         {   
                             int zeroCount = UInt8( std::stoi( value ) ) >> 4 ;
                             int category = UInt8( std::stoi( value ) ) & 0x0F;
+                            //auto e = m_scanData.substr( k + 1, category );
                             int DCCoeff = bitStringtoValue( m_scanData.substr( k + 1, category ) );
                             
                             //LOG(Logger::Level::DEBUG) << "MCU-" << i + 1 << ": " << component[compID] << "/" << type[HT_DC] << ": ( " << zeroCount << ", " << DCCoeff << " )" << std::endl;
@@ -708,6 +709,9 @@ namespace kpeg
                             
                             //RLE.push_back( 0 );
                             //RLE.push_back( 0 );
+                            
+                            RLE[compID].push_back( 0 );
+                            RLE[compID].push_back( 0 );
                             
                             break;
                         }
@@ -740,6 +744,7 @@ namespace kpeg
                         {
                             int zeroCount = UInt8( std::stoi( value ) ) >> 4 ;
                             int category = UInt8( std::stoi( value ) ) & 0x0F;
+                            //auto e = m_scanData.substr( k + 1, category );
                             int ACCoeff = bitStringtoValue( m_scanData.substr( k + 1, category ) );
                             
                             //LOG(Logger::Level::DEBUG) << "AC Code#: " << ACCodesCount + 1 << ", MCU-" << i + 1 << ": " << component[compID] << "/" << type[HT_AC] << ": ( " << zeroCount << ", " << ACCoeff << " )" << std::endl;
@@ -769,7 +774,45 @@ namespace kpeg
                     else
                         k++;
                 }
+                
+                // If both the DC and AC coefficients are EOB, truncate to (0,0)
+                if ( RLE[compID].size() == 2 )
+                {
+                    bool allZeros = true;
+                    
+                    for ( auto&& rVal : RLE[compID] )
+                    {
+                        if ( rVal != 0 )
+                        {
+                            allZeros = false;
+                            break;
+                        }
+                    }
+                    
+                    // Remove the extra (0,0) pair
+                    if ( allZeros )
+                    {
+                        RLE[compID].pop_back();
+                        RLE[compID].pop_back();
+                    }
+                }
             }
+            
+//             if ( i == 62 )
+//             {
+//                 for ( auto&& rle : RLE )
+//                 {
+//                     std::string r = "";
+//                     for ( auto a = 0; a <= rle.size() - 2; a += 2 )
+//                     {
+//                         std::stringstream ss;
+//                         ss << "( " << rle[a] << ", " << rle[a + 1] << ") ";
+//                         r += ss.str();
+//                     }
+//                     
+//                     LOG(Logger::Level::DEBUG) << "RLE 6,7: " << r << std::endl;
+//                 }
+//             }
             
             // Construct the MCU block from the RLE &
             // quantization tables to a 8x8 matrix

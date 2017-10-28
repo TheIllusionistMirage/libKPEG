@@ -23,6 +23,13 @@ void decodeJPEG(const std::string& filename)
         return;
     }
     
+    kpeg::JPEGDecoder decoder;
+    decoder.open( filename );
+    if ( decoder.decodeImageFile() == kpeg::JPEGDecoder::ResultCode::DECODE_DONE )
+    {
+        decoder.displayImage();
+    }
+    decoder.dumpRawData();
 }
 
 void encodeImage(const std::string& filenameIn, const std::string& filenameOut)
@@ -38,7 +45,12 @@ int handleInput(int argc, char** argv)
         return EXIT_FAILURE;
     }
     
-    if ( argc == 2 )
+    if ( argc == 2 && (std::string)argv[1] == "-h" )
+    {
+        printHelp();
+        return EXIT_SUCCESS;
+    }
+    else if ( argc == 2 )
     {
         decodeJPEG( argv[1] );
         return EXIT_SUCCESS;
@@ -47,13 +59,8 @@ int handleInput(int argc, char** argv)
     {
         encodeImage( argv[1], argv[2] );
     }
-    else if ( argc == 2 && (std::string)argv[1] == "-h" )
-    {
-        printHelp();
-        return EXIT_SUCCESS;
-    }
     
-    return EXIT_SUCCESS;
+    return EXIT_FAILURE;
 }
 
 // tests
@@ -87,17 +94,19 @@ int main( int argc, char** argv )
 
         ////////////////////////////
          
-        kpeg::JPEGDecoder decoder;
-        //decoder.open(argv[1]);
-        //decoder.open("sample2.jpg");
-        decoder.open("block-x.jpg");
-        //decoder.printDetectedSegmentNames();
-        if ( decoder.decodeImageFile() == kpeg::JPEGDecoder::ResultCode::DECODE_DONE )
-        {
-            decoder.displayImage();
-        }
-        decoder.dumpRawData();
-        //decoder.close();
+//         kpeg::JPEGDecoder decoder;
+//         //decoder.open(argv[1]);
+//         //decoder.open("sample2.jpg");
+// //          decoder.open("block-x.jpg");
+//         decoder.open("sample.jpg");
+//         //decoder.printDetectedSegmentNames();
+//         if ( decoder.decodeImageFile() == kpeg::JPEGDecoder::ResultCode::DECODE_DONE )
+//         {
+//             decoder.displayImage();
+//             decoder.dumpRawData();
+//         }
+//         
+//         decoder.close();
          
         ////////////////////////////
         
@@ -126,7 +135,7 @@ int main( int argc, char** argv )
 //         std::cout << "00101" << ": " << kpeg::bitStringtoValue( "00101" ) << std::endl;
 //         std::cout << "10001" << ": " << kpeg::bitStringtoValue( "10001" ) << std::endl;
         
-        //return handleInput(argc, argv);
+        return handleInput(argc, argv);
     }
     catch( std::exception& e )
     {

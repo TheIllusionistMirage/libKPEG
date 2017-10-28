@@ -131,14 +131,14 @@ namespace kpeg
             return false;
         }
         
-        dumpFile << "K-PEG Raw Image Data" << std::endl;
-        dumpFile << std::to_string(getWidth()) << ","<< std::to_string(getHeight()) << std::endl;
+        //dumpFile << "K-PEG Raw Image Data" << std::endl;
+        dumpFile << std::to_string(getWidth()) << " " << std::to_string(getHeight()) << std::endl;
         
         for ( auto&& row : *m_pixelPtr )
         {
             for ( auto&& pixel : row )
-                dumpFile << (int)pixel.comp[Components::COMP1] << ","
-                         << (int)pixel.comp[Components::COMP2] << ","
+                dumpFile << (int)pixel.comp[Components::COMP1] << ":"
+                         << (int)pixel.comp[Components::COMP2] << ":"
                          << (int)pixel.comp[Components::COMP3] << " ";
             dumpFile << std::endl;
         }
