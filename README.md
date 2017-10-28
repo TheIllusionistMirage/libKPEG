@@ -28,6 +28,8 @@ speed.
 
 
 Most images should work without any problems. And if some don't, they will eventually.
+You can check out the `misc/screenshots` directory for some screenshots I took with
+test images.
 
 
 # Reference materials
