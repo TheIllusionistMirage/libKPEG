@@ -3,17 +3,18 @@
 A simple, easy-to-use JPEG library, written in C++11.
 
 This is a work in progress. Expect loads of bugs. There are no dependencies
-save SFML-2.4.x which will be removed in the future (I'm using SFML just to
-test the output of the decode process, not to decode the image itself!).
+to build this project.
 
-As of now, the decoded data is available in uncompressed RGB format in the `.ppm` format
-(the output for `filename.jpg` is `filename.ppm`) and is also displayed in a SFML GUI window.
+Only the decoder has been implemented till now. `libKPEG` decodes a JFIF image file and 
+saves the uncompressed image to a PPM image in the same directory and while encoding,
+takes as input a PPM image file and converts it to a corresponding JFIF file.
 
 My goal of writing this library is to gain a better technical knowledge about
 JPEG image compression and also a self learning programming exercise. I have
 intentionally used naive programming constructs for better clarity, sacrificing
 speed.
 
+**NOTE:** _Only 8-bit Sequential Baseline DCT, grayscale/RGB, no subsampling (4:4:4) is supported as of now._
 
 # Features Supported
 

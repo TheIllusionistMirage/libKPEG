@@ -20,7 +20,6 @@
 #include "Image.hpp"
 #include "HuffmanTree.hpp"
 #include "MCU.hpp"
-#include "ImageViewer.hpp"
 
 namespace kpeg
 {
@@ -40,7 +39,7 @@ namespace kpeg
             
             ResultCode decodeImageFile();
             
-            void displayImage();
+//             void displayImage();
             
         public:
             
@@ -71,7 +70,7 @@ namespace kpeg
             
             void parseQuantizationTable();
             
-            void parseSOF0Segment();
+            ResultCode parseSOF0Segment();
             
             void parseHuffmanTable();
             
@@ -126,8 +125,6 @@ namespace kpeg
             std::string m_scanData;
             
             std::vector<MCU> m_MCU;
-            
-            ImageViewer m_imageViewer;
     };
 }
 

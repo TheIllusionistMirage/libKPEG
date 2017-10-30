@@ -19,9 +19,11 @@ namespace kpeg
     {
         LOG(Logger::Level::INFO) << "Creating Image from MCU vector..." << std::endl;
         
-        int rowMCUCount = 1;
-        
         int mcuNum = 0;
+        
+        int jpegWidth = m_width % 8 == 0 ? m_width : m_width + 8 - ( m_width % 8 );
+        int jpegHeight = m_height % 8 == 0 ? m_height : m_height + 8 - ( m_height % 8 );
+        
 //         std::cout << "MCU VEc: " << MCUVector.size() << std::endl;
 //         
 //         for ( int i = 0; i < MCUVector.size(); ++i )
@@ -42,11 +44,11 @@ namespace kpeg
 //         }
         
         // Create a pixel pointer of size (Image width) x (Image height)
-        m_pixelPtr = std::make_shared<std::vector<std::vector<Pixel>>>( m_height, std::vector<Pixel>( m_width, Pixel() ) );
+        m_pixelPtr = std::make_shared<std::vector<std::vector<Pixel>>>( jpegHeight, std::vector<Pixel>( jpegWidth, Pixel() ) );
         
-        for ( int y = 0; y <= m_height - 8; y += 8 )
+        for ( int y = 0; y <= jpegHeight - 8; y += 8 )
         {
-            for ( int x = 0; x <= m_width - 8; x += 8 )
+            for ( int x = 0; x <= jpegWidth - 8; x += 8 )
             {
                 auto pixelBlock = MCUVector[mcuNum].getAllMatrices();
                 //std::cout << "MCU#: " << mcuNum << std::endl;
@@ -55,47 +57,28 @@ namespace kpeg
                 {
                     for ( int u = 0; u < 8; ++u )
                     {
-                        //std::cout << "C: " << pixelBlock[0][v][u] << " ";
                         (*m_pixelPtr)[y + v][x + u].comp[0] = pixelBlock[0][v][u]; // R
                         (*m_pixelPtr)[y + v][x + u].comp[1] = pixelBlock[1][v][u]; // G
                         (*m_pixelPtr)[y + v][x + u].comp[2] = pixelBlock[2][v][u]; // B
                     }
                 }
-                
-//                 (*m_pixelPtr)[y][x].comp[0] = ;
-//                 (*m_pixelPtr)[y][x].comp[1] = ;
-//                 (*m_pixelPtr)[y][x].comp[2] = ;
             
                 mcuNum++;
             }
         }
         
-/*// //         // Insert the 1st row of the image, any JPEG image is at least one row tall
-// //         m_pixelPtr->push_back(std::vector<Pixel>());
-//         
-//         for ( int i = 0; i < MCUVector.size(); ++i )
-//         {
-//             if ( rowMCUCount == m_width / 8 )
-//             {
-//                 // Add new row to image...
-//                 //m_pixelPtr->back().back().comp[0];
-//                 m_pixelPtr->push_back(std::vector<Pixel>());
-//             }
-//             
-//             Pixel px{  };
-//         }*/
+        if ( m_width != jpegWidth )
+        {
+            for ( auto&& row : *m_pixelPtr )
+                for ( int c = 0; c < 8 - m_width % 8; ++c )
+                    row.pop_back();
+        }
         
-//         for ( auto y = 0; y < m_height; ++y )
-//         {
-//             for ( auto x = 0; x < m_width; ++x )
-//             {
-//                 std::cout << "("
-//                           << (*m_pixelPtr)[y][x].comp[0] << ","
-//                           << (*m_pixelPtr)[y][x].comp[1] << ","
-//                           << (*m_pixelPtr)[y][x].comp[2] << ")  ";
-//             }
-//             std::cout << std::endl;
-//         }
+        if ( m_height != jpegHeight )
+        {
+            for ( int c = 0; c < 8 - m_height % 8; ++c )
+                m_pixelPtr->pop_back();
+        }        
 
         LOG(Logger::Level::INFO) << "Finished created Image from MCU [OK]" << std::endl;
     }

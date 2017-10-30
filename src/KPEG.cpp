@@ -11,7 +11,6 @@ namespace kpeg
         
         JPEGDecoder decoder;
         decoder.decodeImageFile();
-        decoder.displayImage();
         
         LOG(Logger::Level::INFO) << "JPEG Decoder finished." << std::endl;
     }

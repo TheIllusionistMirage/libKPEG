@@ -27,9 +27,7 @@ void decodeJPEG(const std::string& filename)
     decoder.open( filename );
     if ( decoder.decodeImageFile() == kpeg::JPEGDecoder::ResultCode::DECODE_DONE )
     {
-        decoder.displayImage();
         decoder.dumpRawData();
-        decoder.close();
     }
 }
 
@@ -96,45 +94,16 @@ int main( int argc, char** argv )
         ////////////////////////////
          
 //         kpeg::JPEGDecoder decoder;
-//         //decoder.open(argv[1]);
-//         //decoder.open("sample2.jpg");
-// //          decoder.open("block-x.jpg");
-//         decoder.open("baboon-2.jpg");
+//         decoder.open("../misc/images/sample.jpg");
 //         //decoder.printDetectedSegmentNames();
 //         if ( decoder.decodeImageFile() == kpeg::JPEGDecoder::ResultCode::DECODE_DONE )
 //         {
-//             decoder.displayImage();
 //             decoder.dumpRawData();
 //         }
-//         
-//         decoder.close();
          
-        ////////////////////////////
-        
-         //huffmanTreeTest();
-        
-        ///////////////
-        
+        //huffmanTreeTest();
         //transformTest();
-        
-        ///////////////
-        
         //colorTest();
-        
-        ///////////////
-        
-//         std::cout << 17 << ": " << kpeg::valueToBitString( 17 ) << std::endl;
-//         std::cout << 128 << ": " << kpeg::valueToBitString( 128 ) << std::endl;
-//         std::cout << 65 << ": " << kpeg::valueToBitString( 65 ) << std::endl;
-//         std::cout << 30 << ": " << kpeg::valueToBitString( 30 ) << std::endl;
-//         std::cout << -34 << ": " << kpeg::valueToBitString( -34 ) << std::endl;
-//         std::cout << -512 << ": " << kpeg::valueToBitString( -512 ) << std::endl;
-        
-//         std::cout << "000" << ": " << kpeg::bitStringtoValue( "000" ) << std::endl;
-//         std::cout << "011101" << ": " << kpeg::bitStringtoValue( "011101" ) << std::endl;
-//         std::cout << "11110" << ": " << kpeg::bitStringtoValue( "11110" ) << std::endl;
-//         std::cout << "00101" << ": " << kpeg::bitStringtoValue( "00101" ) << std::endl;
-//         std::cout << "10001" << ": " << kpeg::bitStringtoValue( "10001" ) << std::endl;
         
         return handleInput(argc, argv);
     }

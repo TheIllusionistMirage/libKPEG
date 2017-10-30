@@ -61,10 +61,10 @@ namespace kpeg
             case JFIF_APP0      :   LOG(Logger::Level::INFO) << "Found segment, JPEG/JFIF Image Marker segment (APP0)" << std::endl; parseJFIFSegment(); return ResultCode::SUCCESS;
             case JFIF_COM       :   LOG(Logger::Level::INFO) << "Found segment, Comment(FFFE)" << std::endl; parseComment(); return ResultCode::SUCCESS;
             case JFIF_DQT       :   LOG(Logger::Level::INFO) << "Found segment, Define Quantization Table (FFDB)" << std::endl; parseQuantizationTable(); return ResultCode::SUCCESS;
-            case JFIF_SOF0      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 0: Baseline DCT (FFC0)" << std::endl; parseSOF0Segment(); return ResultCode::SUCCESS;
+            case JFIF_SOF0      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 0: Baseline DCT (FFC0)" << std::endl; return parseSOF0Segment(); //return ResultCode::SUCCESS;
             case JFIF_SOF1      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 1: Extended Sequential DCT (FFC1), Not supported" << std::endl; return ResultCode::TERMINATE;
-//             case JFIF_SOF2      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 2: Progressive DCT (FFC2), Not supported" << std::endl; return ResultCode::TERMINATE;
-            case JFIF_SOF2      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 2: Progressive DCT (FFC2)" << std::endl; parseSOF0Segment(); return ResultCode::SUCCESS;
+             case JFIF_SOF2      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 2: Progressive DCT (FFC2), Not supported" << std::endl; return ResultCode::TERMINATE;
+//             case JFIF_SOF2      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 2: Progressive DCT (FFC2)" << std::endl; parseSOF0Segment(); return ResultCode::SUCCESS;
             case JFIF_DHT       :   LOG(Logger::Level::INFO) << "Found segment, Define Huffman Table (FFC4)" << std::endl; parseHuffmanTable(); return ResultCode::SUCCESS;
             case JFIF_SOS       :   LOG(Logger::Level::INFO) << "Found segment, Start of Scan (FFDA)" << std::endl; parseSOSSegment(); return ResultCode::SUCCESS;
 //             case JFIF_EOI       :   LOG(Logger::Level::INFO) << "Found segment, End of Image (FFD9)" << std::endl;  return ResultCode::SUCCESS;
@@ -123,7 +123,7 @@ namespace kpeg
             }
             else
             {
-                std::cout <<m_imageFile.tellg() << "ZZZZZZ: " << std::hex << byte << std::endl;
+                //std::cout <<m_imageFile.tellg() << "ZZZZZZ: " << std::hex << byte << std::endl;
                 LOG(Logger::Level::ERROR) << "[ FATAL ] Invalid JFIF file! Terminating..." << std::endl;
                 status = ResultCode::ERROR;
                 break;
@@ -149,15 +149,15 @@ namespace kpeg
         return status;
     }
     
-    void JPEGDecoder::displayImage()
-    {
-        LOG(Logger::Level::INFO) << "Displaying decoded JPEG image: \'" + m_filename + "\'" << std::endl;
-        
-        m_imageViewer.setImagePtr( m_image.getPixelPtr() );
-        m_imageViewer.draw();
-        
-        LOG(Logger::Level::INFO) << "Finished displaying decoded image [OK]]" << std::endl;
-    }
+//     void JPEGDecoder::displayImage()
+//     {
+//         LOG(Logger::Level::INFO) << "Displaying decoded JPEG image: \'" + m_filename + "\'" << std::endl;
+//         
+//         m_imageViewer.setImagePtr( m_image.getPixelPtr() );
+//         m_imageViewer.draw();
+//         
+//         LOG(Logger::Level::INFO) << "Finished displaying decoded image [OK]]" << std::endl;
+//     }
     
     void JPEGDecoder::parseJFIFSegment()
     {
@@ -266,11 +266,11 @@ namespace kpeg
             {
                 m_imageFile >> std::noskipws >> Qi;
                 
-                if ( Qi == JFIF_BYTE_FF )
-                {
-                    LOG(Logger::Level::ERROR) << "Unexpected start of marker at offest: " << (int)m_imageFile.tellg() - 1 << std::endl;
-                    return;
-                }
+//                 if ( Qi == JFIF_BYTE_FF )
+//                 {
+//                     LOG(Logger::Level::ERROR) << "Unexpected start of marker at offest: " << (int)m_imageFile.tellg() - 1 << std::endl;
+//                     return;
+//                 }
                 
                 m_QTables[QTtable].push_back( (UInt16)Qi );
             }
@@ -296,12 +296,12 @@ namespace kpeg
 //         printCurrPos();
     }
     
-    void JPEGDecoder::parseSOF0Segment()
+    JPEGDecoder::ResultCode JPEGDecoder::parseSOF0Segment()
     {
         if ( !m_imageFile.is_open() || !m_imageFile.good() )
         {
             LOG(Logger::Level::ERROR) << "Unable scan image file: \'" + m_filename + "\'" << std::endl;
-            return;
+            return ResultCode::ERROR;
         }
         
         LOG(Logger::Level::DEBUG) << "Parsing SOF-0 segment..." << std::endl;
@@ -332,6 +332,8 @@ namespace kpeg
         
         UInt8 compID = 0, sampFactor = 0, QTNo = 0;
         
+        bool isNonSampled = true;
+        
         for ( auto i = 0; i < 3; ++i )
         {
             m_imageFile >> std::noskipws >> compID >> sampFactor >> QTNo;
@@ -339,12 +341,24 @@ namespace kpeg
             LOG(Logger::Level::DEBUG) << "Component ID: " << (int)compID << std::endl;
             LOG(Logger::Level::DEBUG) << "Sampling Factor, Horizontal: " << int( sampFactor >> 4 ) << ", Vertical: " << int( sampFactor & 0x0F ) << std::endl;
             LOG(Logger::Level::DEBUG) << "Quantization table no.: " << (int)QTNo << std::endl;
+            
+            if ( ( sampFactor >> 4 ) != 1 || ( sampFactor & 0x0F ) != 1 )
+                isNonSampled = false;
+        }
+        
+        if ( !isNonSampled )
+        {
+            LOG(Logger::Level::INFO) << "Chroma subsampling not yet supported!" << std::endl;
+            LOG(Logger::Level::DEBUG) << "Chroma subsampling is not 4:4:4, terminating..." << std::endl;
+            return ResultCode::TERMINATE;
         }
         
         LOG(Logger::Level::DEBUG) << "Finished parsing SOF-0 segment [OK]" << std::endl;
         //printCurrPos();
         
         m_image.setDimensions( imgWidth, imgHeight );
+        
+        return ResultCode::SUCCESS;
     }
     
     void JPEGDecoder::parseHuffmanTable()
