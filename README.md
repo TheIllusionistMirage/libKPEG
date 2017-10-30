@@ -6,9 +6,8 @@ This is a work in progress. Expect loads of bugs. There are no dependencies
 save SFML-2.4.x which will be removed in the future (I'm using SFML just to
 test the output of the decode process, not to decode the image itself!).
 
-As of now, the decoded data is available in uncompressed RGB format in the
-file `dump.txt` which is produced after running the decoder (later on it
-will be to a `.ppm` image file) and is also displayed in a SFML GUI window.
+As of now, the decoded data is available in uncompressed RGB format in the `.ppm` format
+(the output for `filename.jpg` is `filename.ppm`) and is also displayed in a SFML GUI window.
 
 My goal of writing this library is to gain a better technical knowledge about
 JPEG image compression and also a self learning programming exercise. I have

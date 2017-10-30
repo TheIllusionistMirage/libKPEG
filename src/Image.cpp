@@ -131,16 +131,17 @@ namespace kpeg
             return false;
         }
         
-        //dumpFile << "K-PEG Raw Image Data" << std::endl;
-        dumpFile << std::to_string(getWidth()) << " " << std::to_string(getHeight()) << std::endl;
+        dumpFile << "P6" << std::endl;
+        dumpFile << "# PPM dump created using libKPEG: https://github.com/TheIllusionistMirage/libKPEG" << std::endl;
+        dumpFile << m_width << " " << m_height << std::endl;
+        dumpFile << 255 << std::endl;
         
         for ( auto&& row : *m_pixelPtr )
         {
             for ( auto&& pixel : row )
-                dumpFile << (int)pixel.comp[Components::COMP1] << ":"
-                         << (int)pixel.comp[Components::COMP2] << ":"
-                         << (int)pixel.comp[Components::COMP3] << " ";
-            dumpFile << std::endl;
+                dumpFile << (UInt8)pixel.comp[RGBComponents::RED]
+                         << (UInt8)pixel.comp[RGBComponents::GREEN]
+                         << (UInt8)pixel.comp[RGBComponents::BLUE];
         }
         
         LOG(Logger::Level::INFO) << "Raw image data dumped to file: \'" + filename + "\'." << std::endl;

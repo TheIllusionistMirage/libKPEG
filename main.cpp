@@ -28,8 +28,9 @@ void decodeJPEG(const std::string& filename)
     if ( decoder.decodeImageFile() == kpeg::JPEGDecoder::ResultCode::DECODE_DONE )
     {
         decoder.displayImage();
+        decoder.dumpRawData();
+        decoder.close();
     }
-    decoder.dumpRawData();
 }
 
 void encodeImage(const std::string& filenameIn, const std::string& filenameOut)
@@ -98,7 +99,7 @@ int main( int argc, char** argv )
 //         //decoder.open(argv[1]);
 //         //decoder.open("sample2.jpg");
 // //          decoder.open("block-x.jpg");
-//         decoder.open("sample.jpg");
+//         decoder.open("baboon-2.jpg");
 //         //decoder.printDetectedSegmentNames();
 //         if ( decoder.decodeImageFile() == kpeg::JPEGDecoder::ResultCode::DECODE_DONE )
 //         {

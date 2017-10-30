@@ -62,7 +62,7 @@ namespace kpeg
             
             inline void printCurrPos()
             {
-                std::cout << "Current file pos: " << m_imageFile.tellg() << std::endl;
+                std::cout << "Current file pos: 0x" << std::hex << m_imageFile.tellg() << std::endl;
             }
                         
         private:
@@ -110,12 +110,14 @@ namespace kpeg
             
             std::vector<std::vector<UInt16>> m_QTables;//[4];
             
-            int m_huffTableCount;
+            //int m_huffTableCount;
             
             // For i=0..3:
             //    HT_i is array of size=16, where j-th element is < count-j-bits, symbol-list >
             //
             HuffmanTable m_huffmanTable[2][2];
+            
+            std::vector< std::pair<int, int> > mDHTsScanned;
             
             HuffmanTree m_huffmanTree[2][2];
             

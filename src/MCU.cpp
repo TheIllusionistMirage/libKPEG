@@ -29,18 +29,18 @@ namespace kpeg
         
         LOG(Logger::Level::DEBUG) << "Constructing MCU: " << m_MCUCount << "..." << std::endl;
         
-        for ( auto&& rle : compRLE )
-        {
-            std::string rleStr = "";
-            for ( auto v = 0; v < rle.size(); v += 2 )
-            {
-                std::stringstream ss;
-                ss << "(" << rle[v] << ", " << rle[v + 1] << ") ";
-                rleStr += ss.str();
-            }
-            
-            LOG(Logger::Level::DEBUG) << "RLE decoded data: " << rleStr << std::endl;
-        }
+//         for ( auto&& rle : compRLE )
+//         {
+//             std::string rleStr = "";
+//             for ( auto v = 0; v < rle.size(); v += 2 )
+//             {
+//                 std::stringstream ss;
+//                 ss << "(" << rle[v] << ", " << rle[v + 1] << ") ";
+//                 rleStr += ss.str();
+//             }
+//             
+//             LOG(Logger::Level::DEBUG) << "RLE decoded data: " << rleStr << std::endl;
+//         }
         
         const char* component[] = { "Y (Luminance)", "Cb (Chrominance)", "Cr (Chrominance)" };
         const char* type[] = { "DC", "AC" };    

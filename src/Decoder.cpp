@@ -9,14 +9,14 @@
 
 namespace kpeg
 {
-    JPEGDecoder::JPEGDecoder() :
-     m_huffTableCount(0)
+    JPEGDecoder::JPEGDecoder() //:
+     //m_huffTableCount(0)
     {
         LOG(Logger::Level::INFO) << "Created \'JPEGDecoder object\'." << std::endl;
     }
             
-    JPEGDecoder::JPEGDecoder( const std::string& filename ) :
-     m_huffTableCount(0)
+    JPEGDecoder::JPEGDecoder( const std::string& filename ) //:
+     //m_huffTableCount(0)
     {
         LOG(Logger::Level::INFO) << "Created \'JPEGDecoder object\'." << std::endl;
     }
@@ -63,7 +63,8 @@ namespace kpeg
             case JFIF_DQT       :   LOG(Logger::Level::INFO) << "Found segment, Define Quantization Table (FFDB)" << std::endl; parseQuantizationTable(); return ResultCode::SUCCESS;
             case JFIF_SOF0      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 0: Baseline DCT (FFC0)" << std::endl; parseSOF0Segment(); return ResultCode::SUCCESS;
             case JFIF_SOF1      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 1: Extended Sequential DCT (FFC1), Not supported" << std::endl; return ResultCode::TERMINATE;
-            case JFIF_SOF2      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 2: Progressive DCT (FFC2), Not supported" << std::endl; return ResultCode::TERMINATE;
+//             case JFIF_SOF2      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 2: Progressive DCT (FFC2), Not supported" << std::endl; return ResultCode::TERMINATE;
+            case JFIF_SOF2      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 2: Progressive DCT (FFC2)" << std::endl; parseSOF0Segment(); return ResultCode::SUCCESS;
             case JFIF_DHT       :   LOG(Logger::Level::INFO) << "Found segment, Define Huffman Table (FFC4)" << std::endl; parseHuffmanTable(); return ResultCode::SUCCESS;
             case JFIF_SOS       :   LOG(Logger::Level::INFO) << "Found segment, Start of Scan (FFDA)" << std::endl; parseSOSSegment(); return ResultCode::SUCCESS;
 //             case JFIF_EOI       :   LOG(Logger::Level::INFO) << "Found segment, End of Image (FFD9)" << std::endl;  return ResultCode::SUCCESS;
@@ -75,7 +76,13 @@ namespace kpeg
     
     bool JPEGDecoder::dumpRawData()
     {
-        m_image.dumpRawData( "dump.txt" );
+        std::size_t extPos = m_filename.find( ".jpg" );
+        
+        if ( extPos == std::string::npos )
+            extPos = m_filename.find( ".jpeg" );
+        
+        std::string targetFilename = m_filename.substr( 0, extPos ) + ".ppm";
+        m_image.dumpRawData( targetFilename );
     }
     
     JPEGDecoder::ResultCode JPEGDecoder::decodeImageFile()
@@ -116,7 +123,10 @@ namespace kpeg
             }
             else
             {
+                std::cout <<m_imageFile.tellg() << "ZZZZZZ: " << std::hex << byte << std::endl;
                 LOG(Logger::Level::ERROR) << "[ FATAL ] Invalid JFIF file! Terminating..." << std::endl;
+                status = ResultCode::ERROR;
+                break;
             }
         }
         
@@ -234,28 +244,36 @@ namespace kpeg
         lenByte = htons( lenByte );
         LOG(Logger::Level::DEBUG) << "Quantization table segment length: " << (int)lenByte << std::endl;
         
-        m_imageFile >> std::noskipws >> PqTq;
+        lenByte -= 2;
         
-        int precision = PqTq >> 4; // Precision is always 8-bit for baseline DCT
-        int QTtable = PqTq & 0x0F; // Quantization table number (0-3)
+        //std::cout << "ZZZZ: " << int(lenByte) / 65 << std::endl;
         
-        LOG(Logger::Level::DEBUG) << "Quantization Table Number: " << QTtable << std::endl;
-        LOG(Logger::Level::DEBUG) << "Quantization Table #" << QTtable << " precision: " << (precision == 0 ? "8-bit" : "16-bit" ) << std::endl;
-        
-        m_QTables.push_back({});
-        
-        // Populate quantization table #QTtable
-        for ( auto i = 0; i < lenByte - 3; ++i )
+        for ( int qt = 0; qt < int(lenByte) / 65; ++qt )
         {
-            m_imageFile >> std::noskipws >> Qi;
+            m_imageFile >> std::noskipws >> PqTq;
             
-            if ( Qi == JFIF_BYTE_FF )
+            int precision = PqTq >> 4; // Precision is always 8-bit for baseline DCT
+            int QTtable = PqTq & 0x0F; // Quantization table number (0-3)
+            
+            LOG(Logger::Level::DEBUG) << "Quantization Table Number: " << QTtable << std::endl;
+            LOG(Logger::Level::DEBUG) << "Quantization Table #" << QTtable << " precision: " << (precision == 0 ? "8-bit" : "16-bit" ) << std::endl;
+            
+            m_QTables.push_back({});
+            
+            // Populate quantization table #QTtable
+            
+            for ( auto i = 0; i < 64; ++i )
             {
-                LOG(Logger::Level::ERROR) << "Unexpected start of marker at offest: " << (int)m_imageFile.tellg() - 1 << std::endl;
-                return;
+                m_imageFile >> std::noskipws >> Qi;
+                
+                if ( Qi == JFIF_BYTE_FF )
+                {
+                    LOG(Logger::Level::ERROR) << "Unexpected start of marker at offest: " << (int)m_imageFile.tellg() - 1 << std::endl;
+                    return;
+                }
+                
+                m_QTables[QTtable].push_back( (UInt16)Qi );
             }
-            
-            m_QTables[QTtable].push_back( (UInt16)Qi );
         }
         
 //         int qt[8][8];
@@ -346,96 +364,78 @@ namespace kpeg
         LOG(Logger::Level::DEBUG) << "Huffman table length: " << (int)len << std::endl;
         
         int segmentEnd = (int)m_imageFile.tellg() + len - 2;
+        //len -= 2;
         
-        if ( m_huffTableCount == 4 )
+        while ( m_imageFile.tellg() < segmentEnd )
         {
-            LOG(Logger::Level::DEBUG) << "Skipping Huffman table..." << std::endl;
-            m_imageFile.seekg( segmentEnd );
-            return;
-        }
-        
-        UInt8 htinfo;
-        m_imageFile >> std::noskipws >> htinfo;
-        
-        int HTType = int( (htinfo & 0x10) >> 4 );
-        int HTNumber = int(htinfo & 0x0F);
-        
-        LOG(Logger::Level::DEBUG) << "Huffman table type: " << HTType << std::endl;
-        LOG(Logger::Level::DEBUG) << "Huffman table #: " << HTNumber << std::endl;
-        
-        UInt8 symbolCount;
-        
-        //LOG(Logger::Level::DEBUG) << "Displaying Huffman table, (Type: " << HTType << ", #: " << HTNumber << ") symbol counts... " << std::endl;
-        for ( auto i = 1; i <= 16; ++i )
-        {
-            m_imageFile >> std::noskipws >> symbolCount;
-//             LOG(Logger::Level::DEBUG) << "Huffman table, (Type:" << HTType << ",#:" << HTNumber << "), Length=" << i << " : " << (int)symbolCount << std::endl;
-            //LOG(Logger::Level::DEBUG) << "Code length=" << i << " : " << (int)symbolCount << std::endl;
+            UInt8 htinfo;
+            m_imageFile >> std::noskipws >> htinfo;
             
-            m_huffmanTable[HTType][HTNumber][i-1].first = (int)symbolCount;
-        }
-        
-//         int i = 0;
-//         while ( m_imageFile.tellg() < segmentEnd )
-//         {
-//             UInt8 code;
-//             m_imageFile >> std::noskipws >> code;
-//             //LOG(Logger::Level::DEBUG) << "Huffman code: 0x" << std::hex << std::setfill('0') << std::setw(2) << std::setprecision(8) << (int)code << "(" << std::bitset<8>(int(code)) << ")" << std::endl;
-//             
-//             if ( m_huffmanTable[HTNumber][i].first == 0 )
-//             {
-//                 while ( m_huffmanTable[HTNumber][++i].first == 0 );
-//             }
-//             
-//             m_huffmanTable[HTNumber][i].second.push_back( code );
-//         }
-
-        //int i = 0;
-        //while ( m_imageFile.tellg() < segmentEnd )
-        for ( auto i = 0; m_imageFile.tellg() < segmentEnd; )
-        {
-            UInt8 code;
-            m_imageFile >> std::noskipws >> code;
-            //LOG(Logger::Level::DEBUG) << "Huffman code: 0x" << std::hex << std::setfill('0') << std::setw(2) << std::setprecision(8) << (int)code << "(" << std::bitset<8>(int(code)) << ")" << std::endl;
+            int HTType = int( (htinfo & 0x10) >> 4 );
+            int HTNumber = int(htinfo & 0x0F);
             
-            if ( m_huffmanTable[HTType][HTNumber][i].first == 0 )
+            LOG(Logger::Level::DEBUG) << "Huffman table type: " << HTType << std::endl;
+            LOG(Logger::Level::DEBUG) << "Huffman table #: " << HTNumber << std::endl;
+            
+            int totalSymbolCount = 0;
+            UInt8 symbolCount;
+            
+            //LOG(Logger::Level::DEBUG) << "Displaying Huffman table, (Type: " << HTType << ", #: " << HTNumber << ") symbol counts... " << std::endl;
+            for ( auto i = 1; i <= 16; ++i )
             {
-                while ( m_huffmanTable[HTType][HTNumber][++i].first == 0 );
+                m_imageFile >> std::noskipws >> symbolCount;
+    //             LOG(Logger::Level::DEBUG) << "Huffman table, (Type:" << HTType << ",#:" << HTNumber << "), Length=" << i << " : " << (int)symbolCount << std::endl;
+                //LOG(Logger::Level::DEBUG) << "Code length=" << i << " : " << (int)symbolCount << std::endl;
+                
+                m_huffmanTable[HTType][HTNumber][i-1].first = (int)symbolCount;
+                totalSymbolCount += (int)symbolCount;
             }
             
-            m_huffmanTable[HTType][HTNumber][i].second.push_back( code );
-            
-            if ( m_huffmanTable[HTType][HTNumber][i].first == m_huffmanTable[HTType][HTNumber][i].second.size() )
-                i++;
-        }
-        
-        LOG(Logger::Level::DEBUG) << "Printing symbols for Huffman table (" << HTType << "," << HTNumber << ")..." << std::endl;
-        
-        int totalCodes = 0;
-        for ( auto i = 0; i < 16; ++i )
-        {
-            std::string codeStr = "";
-            for ( auto&& symbol : m_huffmanTable[HTType][HTNumber][i].second )
+            int syms = 0;
+            for ( auto i = 0; syms < totalSymbolCount;  )
             {
-                std::stringstream ss;
-                ss << "0x" << std::hex << std::setfill('0') << std::setw(2) << std::setprecision(16) << (int)symbol;
-                codeStr += ss.str() + " ";
-                totalCodes++;
+                UInt8 code;
+                m_imageFile >> std::noskipws >> code;
+                //LOG(Logger::Level::DEBUG) << "Huffman code: 0x" << std::hex << std::setfill('0') << std::setw(2) << std::setprecision(8) << (int)code << "(" << std::bitset<8>(int(code)) << ")" << std::endl;
+                
+                if ( m_huffmanTable[HTType][HTNumber][i].first == 0 )
+                {
+                    while ( m_huffmanTable[HTType][HTNumber][++i].first == 0 );
+                }
+                
+                m_huffmanTable[HTType][HTNumber][i].second.push_back( code );
+                syms++;
+                
+                if ( m_huffmanTable[HTType][HTNumber][i].first == m_huffmanTable[HTType][HTNumber][i].second.size() )
+                    i++;
             }
             
-            LOG(Logger::Level::DEBUG) << "Code length: " << i+1 // m_huffmanTable[HTType][HTNumber][i].first
-                                      << ", Symbol count: " << m_huffmanTable[HTType][HTNumber][i].second.size()
-                                      << ", Symbols: " << codeStr << std::endl;
+            LOG(Logger::Level::DEBUG) << "Printing symbols for Huffman table (" << HTType << "," << HTNumber << ")..." << std::endl;
+            
+            int totalCodes = 0;
+            for ( auto i = 0; i < 16; ++i )
+            {
+                std::string codeStr = "";
+                for ( auto&& symbol : m_huffmanTable[HTType][HTNumber][i].second )
+                {
+                    std::stringstream ss;
+                    ss << "0x" << std::hex << std::setfill('0') << std::setw(2) << std::setprecision(16) << (int)symbol;
+                    codeStr += ss.str() + " ";
+                    totalCodes++;
+                }
+                
+                LOG(Logger::Level::DEBUG) << "Code length: " << i+1 // m_huffmanTable[HTType][HTNumber][i].first
+                                        << ", Symbol count: " << m_huffmanTable[HTType][HTNumber][i].second.size()
+                                        << ", Symbols: " << codeStr << std::endl;
+            }
+            
+            LOG(Logger::Level::DEBUG) << "Total Huffman codes for Huffman table(Type:" << HTType << ",#:" << HTNumber << "): " << totalCodes << std::endl;
+            
+            m_huffmanTree[HTType][HTNumber].constructHuffmanTree( m_huffmanTable[HTType][HTNumber] );
+            auto htree = m_huffmanTree[HTType][HTNumber].getTree();
+            LOG(Logger::Level::DEBUG) << "Huffman codes:-" << std::endl;
+            inOrder( htree );
         }
-        
-        LOG(Logger::Level::DEBUG) << "Total Huffman codes for Huffman table(Type:" << HTType << ",#:" << HTNumber << "): " << totalCodes << std::endl;
-        
-        m_huffmanTree[HTType][HTNumber].constructHuffmanTree( m_huffmanTable[HTType][HTNumber] );
-        auto htree = m_huffmanTree[HTType][HTNumber].getTree();
-        LOG(Logger::Level::DEBUG) << "Huffman codes:-" << std::endl;
-        inOrder( htree );
-        
-        m_huffTableCount++;
         
         LOG(Logger::Level::DEBUG) << "Finished parsing Huffman table segment [OK]" << std::endl;
         
@@ -444,6 +444,17 @@ namespace kpeg
     
     void JPEGDecoder::parseSOSSegment()
     {
+//         if ( m_huffTableCount < 4 )
+//         {
+//             //m_huffmanTable
+//             //return;
+//             m_huffmanTable[1][0] = m_huffmanTable[0][1];
+//             m_huffmanTable[1][1] = m_huffmanTable[0][1];
+//             
+//             m_huffmanTree[1][0].constructHuffmanTree( m_huffmanTable[1][0] );
+//             m_huffmanTree[1][1].constructHuffmanTree( m_huffmanTable[1][1] );
+//         }
+        
         if ( !m_imageFile.is_open() || !m_imageFile.good() )
         {
             LOG(Logger::Level::ERROR) << "Unable scan image file: \'" + m_filename + "\'" << std::endl;
