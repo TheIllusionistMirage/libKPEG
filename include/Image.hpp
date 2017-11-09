@@ -18,7 +18,7 @@
 #include "MCU.hpp"
 
 namespace kpeg
-{
+{    
     ///// Image structure /////
     
     class Image
@@ -27,15 +27,20 @@ namespace kpeg
             
             Image();
             
+            // Used by decoder
             void createImageFromMCUs( const std::vector<MCU>& MCUVector );
             
             PixelPtr getPixelPtr();
+            
+            FPixelPtr getFlPixelPtr();
             
             const unsigned getWidth() const;
             
             const unsigned getHeight() const;
             
             const bool dumpRawData( const std::string& filename );
+            
+            const bool readRawData( const std::string& filename );
             
             void setImageFilename( const std::string& filename );
             
@@ -49,6 +54,7 @@ namespace kpeg
             
             std::string  m_filename;
             PixelPtr     m_pixelPtr;
+            FPixelPtr    m_flPixelPtr;
             std::string  m_JPEGversion;
             std::string  m_comment;
             std::size_t  m_width;

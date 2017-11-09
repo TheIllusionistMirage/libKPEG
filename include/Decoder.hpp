@@ -4,8 +4,8 @@
  * @date 2000 B.C.
  * @brief The implementation of a baseline, DCT JPEG decoder
  * 
- * Decoder module is the implementation of a decoder for grayscale
- * and color baseline DCT JPEG images.
+ * Decoder module is the implementation of a 8-bit Sequential
+ * Baseline DCT, grayscale/RGB encoder with no subsampling (4:4:4).
  */
 
 #ifndef DECODER_HPP

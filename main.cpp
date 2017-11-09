@@ -3,6 +3,7 @@
 #include "Utility.hpp"
 #include "Logger.hpp"
 #include "Decoder.hpp"
+#include "Encoder.hpp"
 
 void printHelp()
 {
@@ -105,7 +106,19 @@ int main( int argc, char** argv )
         //transformTest();
         //colorTest();
         
-        return handleInput(argc, argv);
+        kpeg::JPEGEncoder encoder;
+        if ( !encoder.open( "../misc/images/foo.ppm" ) )
+        {
+            LOG(kpeg::Logger::Level::DEBUG) << "Unable to open image file." << std::endl;
+            return -1;
+        }
+        
+        if ( encoder.encodeImage() == kpeg::JPEGEncoder::ResultCode::ENCODE_DONE )
+        {
+            encoder.saveToJFIFFile();
+        }
+        
+        //return handleInput(argc, argv);
     }
     catch( std::exception& e )
     {
