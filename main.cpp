@@ -11,8 +11,8 @@ void printHelp()
     std::cout << "   K-PEG - Simple JPEG Encoder & Decoder"    << std::endl;
     std::cout << "===========================================" << std::endl;
     std::cout << "Help\n" << std::endl;
-    std::cout << "<filename.jpg>                  : Specify an input JPEG file to display" << std::endl;
-    std::cout << "<filename.png> <filename.jpg>   : Convert input PNG file to JPEG" << std::endl;
+    std::cout << "<filename.jpg>                  : Decompress a JPEG image to a PPM image" << std::endl;
+    std::cout << "<filename.ppm> <filename.jpg>   : Convert input PNG file to JPEG" << std::endl;
     std::cout << "-h                              : Print this help message and exit" << std::endl;
 }
 
@@ -34,7 +34,8 @@ void decodeJPEG(const std::string& filename)
 
 void encodeImage(const std::string& filenameIn, const std::string& filenameOut)
 {
-    
+    std::cout << "Enoder not complete: This is a work in progress" << std::endl;
+    return;
 }
 
 int handleInput(int argc, char** argv)
@@ -58,6 +59,7 @@ int handleInput(int argc, char** argv)
     else if ( argc == 3 )
     {
         encodeImage( argv[1], argv[2] );
+        return EXIT_SUCCESS;
     }
     
     return EXIT_FAILURE;
@@ -106,19 +108,19 @@ int main( int argc, char** argv )
         //transformTest();
         //colorTest();
         
-        kpeg::JPEGEncoder encoder;
-        if ( !encoder.open( "../misc/images/foo.ppm" ) )
-        {
-            LOG(kpeg::Logger::Level::DEBUG) << "Unable to open image file." << std::endl;
-            return -1;
-        }
+//         kpeg::JPEGEncoder encoder;
+//         if ( !encoder.open( "../misc/images/foo.ppm" ) )
+//         {
+//             LOG(kpeg::Logger::Level::DEBUG) << "Unable to open image file." << std::endl;
+//             return -1;
+//         }
+//         
+//         if ( encoder.encodeImage() == kpeg::JPEGEncoder::ResultCode::ENCODE_DONE )
+//         {
+//             encoder.saveToJFIFFile();
+//         }
         
-        if ( encoder.encodeImage() == kpeg::JPEGEncoder::ResultCode::ENCODE_DONE )
-        {
-            encoder.saveToJFIFFile();
-        }
-        
-        //return handleInput(argc, argv);
+        return handleInput(argc, argv);
     }
     catch( std::exception& e )
     {
