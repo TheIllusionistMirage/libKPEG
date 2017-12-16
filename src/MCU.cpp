@@ -108,7 +108,7 @@ namespace kpeg
             zzOrder[0] = DCDiff[compID];
             
             int QIndex = compID == 0 ? 0 : 1;
-            for ( auto i = 0; i < 64; ++i )
+            for ( auto i = 0; i < 64; ++i ) // !!!!!! i = 1
                 zzOrder[i] *= m_QTables[QIndex][i];
             
             // Zig-zag order to 2D matrix order

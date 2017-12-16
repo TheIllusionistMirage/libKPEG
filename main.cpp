@@ -34,8 +34,21 @@ void decodeJPEG(const std::string& filename)
 
 void encodeImage(const std::string& filenameIn, const std::string& filenameOut)
 {
-    std::cout << "Enoder not complete: This is a work in progress" << std::endl;
-    return;
+//     std::cout << "Enoder not complete: This is a work in progress" << std::endl;
+//     return;
+    
+//     if ( !kpeg::isValidFilename( filenameIn ) )
+//     {
+//         LOG(kpeg::Logger::Level::ERROR) << "Invalid input file name passed." << std::endl;
+//         return;
+//     }
+    
+    kpeg::JPEGEncoder encoder;
+    encoder.open( filenameIn );
+    if ( !encoder.encodeImage() )
+    {
+        LOG(kpeg::Logger::Level::ERROR) << "An error ocurred while encoding." << std::endl;
+    }
 }
 
 int handleInput(int argc, char** argv)
@@ -108,19 +121,14 @@ int main( int argc, char** argv )
         //transformTest();
         //colorTest();
         
-//         kpeg::JPEGEncoder encoder;
-//         if ( !encoder.open( "../misc/images/foo.ppm" ) )
-//         {
-//             LOG(kpeg::Logger::Level::DEBUG) << "Unable to open image file." << std::endl;
-//             return -1;
-//         }
-//         
-//         if ( encoder.encodeImage() == kpeg::JPEGEncoder::ResultCode::ENCODE_DONE )
-//         {
-//             encoder.saveToJFIFFile();
-//         }
+        kpeg::JPEGEncoder encoder;
+        encoder.open( "test4.ppm" );
+        if ( !encoder.encodeImage() )
+        {
+            LOG(kpeg::Logger::Level::ERROR) << "An error ocurred while encoding." << std::endl;
+        }
         
-        return handleInput(argc, argv);
+        //return handleInput(argc, argv);
     }
     catch( std::exception& e )
     {

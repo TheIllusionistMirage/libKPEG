@@ -64,6 +64,8 @@ namespace kpeg
     const std::string valueToBitString( const Int16 value );
     
     const Int16 bitStringtoValue( const std::string& bitStr );
+    
+    const Int16 getValueCategory( const Int16 value );
 }
 
 #endif // IMAGE_HPP

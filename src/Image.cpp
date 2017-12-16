@@ -258,7 +258,7 @@ namespace kpeg
     const std::string valueToBitString( const Int16 value )
     {
         if ( value == 0x0000 )
-            return "";
+            return "0"; // return "";
         
         Int16 val = value;
         int bits = ( std::log2( std::abs( value ) ) ) + 1;
@@ -299,5 +299,12 @@ namespace kpeg
         }
         
         return factor * value;
+    }
+    
+    const Int16 getValueCategory( const Int16 value )
+    {
+        if ( value == 0x0000 )
+            return 0;
+        return std::log2( std::abs( value ) ) + 1;
     }
 }
