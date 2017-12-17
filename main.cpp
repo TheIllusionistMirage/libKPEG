@@ -121,14 +121,14 @@ int main( int argc, char** argv )
         //transformTest();
         //colorTest();
         
-        kpeg::JPEGEncoder encoder;
-        encoder.open( "test4.ppm" );
-        if ( !encoder.encodeImage() )
-        {
-            LOG(kpeg::Logger::Level::ERROR) << "An error ocurred while encoding." << std::endl;
-        }
+//         kpeg::JPEGEncoder encoder;
+//         encoder.open( "scene.ppm" );
+//         if ( !encoder.encodeImage() )
+//         {
+//             LOG(kpeg::Logger::Level::ERROR) << "An error ocurred while encoding." << std::endl;
+//         }
         
-        //return handleInput(argc, argv);
+        return handleInput(argc, argv);
     }
     catch( std::exception& e )
     {

@@ -83,6 +83,8 @@ namespace kpeg
         
         std::string targetFilename = m_filename.substr( 0, extPos ) + ".ppm";
         m_image.dumpRawData( targetFilename );
+        
+        return true;
     }
     
     JPEGDecoder::ResultCode JPEGDecoder::decodeImageFile()

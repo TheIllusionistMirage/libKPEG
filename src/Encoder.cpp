@@ -123,12 +123,13 @@ namespace kpeg
         // Write the comment marker
         m_outputJPEG << JFIF_BYTE_FF << JFIF_COM;
         
-        std::string comment = "Encoded with libKPEG (https://github.com/TheIllusionistMirage/libKPEG) - Easy to use baseline JPEG library";
+        //std::string comment = "Encoded with libKPEG (https://github.com/TheIllusionistMirage/libKPEG) - Easy to use baseline JPEG library";
+        std::string comment = "Created with GIMP lal alalala";
         
         // Write the length of the comment segment
         // NOTE: The length includes the two bytes that denote the length
-        m_outputJPEG << (UInt8)( (UInt8)( comment.length() >> 8 ) & (UInt8)0xFF00 ); // the first 8 MSBs
-        m_outputJPEG << (UInt8)( (UInt8)comment.length() & (UInt8)0x00FF ); // the next 8 LSBs
+        m_outputJPEG << (UInt8)( (UInt8)( ( comment.length()+2 ) >> 8 ) & (UInt8)0xFF00 ); // the first 8 MSBs
+        m_outputJPEG << (UInt8)( (UInt8)( comment.length()+2 ) & (UInt8)0x00FF ); // the next 8 LSBs
                 
         // Write the comment (only ASCII characters allowed)
         m_outputJPEG << comment;
@@ -575,11 +576,22 @@ namespace kpeg
                     j++;
                 }
                 
-                if ( j == 64 )
+                if ( j == 64 && zeroCount < 64)
                 {
                     //j--;
                     ZRLE[c].push_back( 0 );
                     ZRLE[c].push_back( 0 );
+
+                    break;
+                }
+                else if ( j == 64 && zeroCount == 64)
+                {
+                    //j--;
+                    ZRLE[c].push_back( 0 );
+                    ZRLE[c].push_back( 0 );
+                    ZRLE[c].push_back( 0 );
+                    ZRLE[c].push_back( 0 );
+
                     break;
                 }
                 
@@ -646,24 +658,50 @@ namespace kpeg
             // For each MCU, encode the components separately
             for ( int k = 0; k < 3; ++k )
             {
+//                 std::cout << "RLE: ";
+//                 for ( auto&& v : MCURle[mcu][k] )
+//                     std::cout << v << " ";
+//                 std::cout << std::endl;
+                
                 // Encode DC coefficient for k-th component
                 
-                DCDiff[k] = MCURle[mcu][k][1] - DCDiff[k];
-                
-                Int16 value = DCDiff[k];
-                int cat = getValueCategory( value );
-                std::string bitRep = valueToBitString( value );
-                
-                std::string category;
-                
-                if ( k == YCbCrComponents::Y )
-                    category = DC_LUMA_HUFF_CODES[cat];
+                if ( MCURle[mcu][k][0] == 0 && MCURle[mcu][k][1] == 0 )
+                {
+                    std::string bitRep;
+                        
+                    if ( k == YCbCrComponents::Y )
+                    {
+                        bitRep = DC_LUMA_HUFF_CODES[0];
+                    }
+                    else
+                    {
+                        bitRep = DC_CHROMA_HUFF_CODES[0];
+                    }
+                    
+                    bits += bitRep;
+                }                
                 else
-                    category = DC_CHROMA_HUFF_CODES[cat];
-                
-                // Add the bits for ( category, bit representation )
-                // of the DC coefficient to the scan data bitstream.
-                bits += category + bitRep;
+                {
+                    DCDiff[k] = MCURle[mcu][k][1] - DCDiff[k];
+                    
+                    //std::cout << "DC Diff: " << DCDiff[k] << ", Bit rep: " << valueToBitString( DCDiff[k] )  << std::endl;
+                    
+                    Int16 value = DCDiff[k];
+                    int cat = getValueCategory( value );
+                    std::string bitRep = valueToBitString( value );
+                    
+                    std::string category;
+                    
+                    if ( k == YCbCrComponents::Y )
+                        category = DC_LUMA_HUFF_CODES[cat];
+                    else
+                        category = DC_CHROMA_HUFF_CODES[cat];
+                    
+                    // Add the bits for ( category, bit representation )
+                    // of the DC coefficient to the scan data bitstream.
+                    bits += category + bitRep;
+                    //std::cout << "DC Bits: " << bits << std::endl;
+                }
                 
                 // Encode AC coefficients for k-th component
                 
@@ -684,6 +722,7 @@ namespace kpeg
                         }
                         
                         bits += bitRep;
+                        //std::cout << "AC Bits: " << bits << std::endl;
                         
                         break;
                     }
@@ -706,6 +745,7 @@ namespace kpeg
                         category = AC_CHROMA_HUFF_CODES[zeroCount][cat];
                     
                     bits += category + bitRep;
+                    //std::cout << "AC Bits: " << bits << std::endl;
                 }
             }
             
