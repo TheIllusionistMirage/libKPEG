@@ -1,3 +1,5 @@
+/// Implementation of the decoder
+
 #include <arpa/inet.h> // htons
 #include <iomanip>
 #include <sstream>
@@ -9,25 +11,23 @@
 
 namespace kpeg
 {
-    JPEGDecoder::JPEGDecoder() //:
-     //m_huffTableCount(0)
+    Decoder::Decoder()
     {
-        LOG(Logger::Level::INFO) << "Created \'JPEGDecoder object\'." << std::endl;
+        LOG(Logger::Level::INFO) << "Created \'Decoder object\'." << std::endl;
     }
             
-    JPEGDecoder::JPEGDecoder( const std::string& filename ) //:
-     //m_huffTableCount(0)
+    Decoder::Decoder( const std::string& filename )
     {
-        LOG(Logger::Level::INFO) << "Created \'JPEGDecoder object\'." << std::endl;
+        LOG(Logger::Level::INFO) << "Created \'Decoder object\'." << std::endl;
     }
     
-    JPEGDecoder::~JPEGDecoder()
+    Decoder::~Decoder()
     {
         close();
-        LOG(Logger::Level::INFO) << "Destroyed \'JPEGDecoder object\'." << std::endl;
+        LOG(Logger::Level::INFO) << "Destroyed \'Decoder object\'." << std::endl;
     }
     
-    bool JPEGDecoder::open( const std::string& filename )
+    bool Decoder::open( const std::string& filename )
     {
         m_imageFile.open( filename, std::ios::in | std::ios::binary );
         
@@ -44,13 +44,13 @@ namespace kpeg
         return true;
     }
     
-    void JPEGDecoder::close()
+    void Decoder::close()
     {
         m_imageFile.close();
         LOG(Logger::Level::INFO) << "Closed image file: \'" + m_filename + "\'" << std::endl;
     }
     
-    JPEGDecoder::ResultCode JPEGDecoder::parseSegmentInfo( const UInt8 byte )
+    Decoder::ResultCode Decoder::parseSegmentInfo( const kpeg::types::UInt8 byte )
     {
         if ( byte == JFIF_BYTE_0 || byte == JFIF_BYTE_FF )
             return ERROR;
@@ -61,20 +61,17 @@ namespace kpeg
             case JFIF_APP0      :   LOG(Logger::Level::INFO) << "Found segment, JPEG/JFIF Image Marker segment (APP0)" << std::endl; parseJFIFSegment(); return ResultCode::SUCCESS;
             case JFIF_COM       :   LOG(Logger::Level::INFO) << "Found segment, Comment(FFFE)" << std::endl; parseComment(); return ResultCode::SUCCESS;
             case JFIF_DQT       :   LOG(Logger::Level::INFO) << "Found segment, Define Quantization Table (FFDB)" << std::endl; parseQuantizationTable(); return ResultCode::SUCCESS;
-            case JFIF_SOF0      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 0: Baseline DCT (FFC0)" << std::endl; return parseSOF0Segment(); //return ResultCode::SUCCESS;
+            case JFIF_SOF0      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 0: Baseline DCT (FFC0)" << std::endl; return parseSOF0Segment();
             case JFIF_SOF1      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 1: Extended Sequential DCT (FFC1), Not supported" << std::endl; return ResultCode::TERMINATE;
-             case JFIF_SOF2      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 2: Progressive DCT (FFC2), Not supported" << std::endl; return ResultCode::TERMINATE;
-//             case JFIF_SOF2      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 2: Progressive DCT (FFC2)" << std::endl; parseSOF0Segment(); return ResultCode::SUCCESS;
+            case JFIF_SOF2      :   LOG(Logger::Level::INFO) << "Found segment, Start of Frame 2: Progressive DCT (FFC2), Not supported" << std::endl; return ResultCode::TERMINATE;
             case JFIF_DHT       :   LOG(Logger::Level::INFO) << "Found segment, Define Huffman Table (FFC4)" << std::endl; parseHuffmanTable(); return ResultCode::SUCCESS;
             case JFIF_SOS       :   LOG(Logger::Level::INFO) << "Found segment, Start of Scan (FFDA)" << std::endl; parseSOSSegment(); return ResultCode::SUCCESS;
-//             case JFIF_EOI       :   LOG(Logger::Level::INFO) << "Found segment, End of Image (FFD9)" << std::endl;  return ResultCode::SUCCESS;
         }
         
-        //return ResultCode::DECODE_INCOMPLETE;
         return ResultCode::SUCCESS;
     }
     
-    bool JPEGDecoder::dumpRawData()
+    bool Decoder::dumpRawData()
     {
         std::size_t extPos = m_filename.find( ".jpg" );
         
@@ -87,7 +84,7 @@ namespace kpeg
         return true;
     }
     
-    JPEGDecoder::ResultCode JPEGDecoder::decodeImageFile()
+    Decoder::ResultCode Decoder::decodeImageFile()
     {
         if ( !m_imageFile.is_open() || !m_imageFile.good() )
         {
@@ -97,10 +94,8 @@ namespace kpeg
         
         LOG(Logger::Level::INFO) << "Started decoding process..." << std::endl;
         
-        UInt8 byte;
+        kpeg::types::UInt8 byte;
         ResultCode status = ResultCode::DECODE_DONE;
-        
-        // TODO: Fix this spaghetti code for keeping track of decode status
         
         while ( m_imageFile >> std::noskipws >> byte )
         {
@@ -125,7 +120,6 @@ namespace kpeg
             }
             else
             {
-                //std::cout <<m_imageFile.tellg() << "ZZZZZZ: " << std::hex << byte << std::endl;
                 LOG(Logger::Level::ERROR) << "[ FATAL ] Invalid JFIF file! Terminating..." << std::endl;
                 status = ResultCode::ERROR;
                 break;
@@ -151,17 +145,7 @@ namespace kpeg
         return status;
     }
     
-//     void JPEGDecoder::displayImage()
-//     {
-//         LOG(Logger::Level::INFO) << "Displaying decoded JPEG image: \'" + m_filename + "\'" << std::endl;
-//         
-//         m_imageViewer.setImagePtr( m_image.getPixelPtr() );
-//         m_imageViewer.draw();
-//         
-//         LOG(Logger::Level::INFO) << "Finished displaying decoded image [OK]]" << std::endl;
-//     }
-    
-    void JPEGDecoder::parseJFIFSegment()
+    void Decoder::parseJFIFSegment()
     {
         if ( !m_imageFile.is_open() || !m_imageFile.good() )
         {
@@ -171,8 +155,8 @@ namespace kpeg
         
         LOG(Logger::Level::DEBUG) << "Parsing JPEG/JFIF marker segment (APP-0)..." << std::endl;
         
-        UInt16 lenByte = 0;
-        UInt8 byte = 0;
+        kpeg::types::UInt16 lenByte = 0;
+        kpeg::types::UInt8 byte = 0;
         
         m_imageFile.read( reinterpret_cast<char *>( &lenByte ), 2 );
         lenByte = htons( lenByte );
@@ -183,7 +167,7 @@ namespace kpeg
         // Skip the 'JFIF\0' bytes
         m_imageFile.seekg( 5, std::ios_base::cur );
         
-        UInt8 majVersionByte, minVersionByte;
+        kpeg::types::UInt8 majVersionByte, minVersionByte;
         m_imageFile >> std::noskipws >> majVersionByte >> minVersionByte;
         
         LOG(Logger::Level::DEBUG) << "JFIF version: " << (int)majVersionByte << "." << (int)(minVersionByte >> 4) << (int)(minVersionByte & 0x0F) << std::endl;
@@ -194,7 +178,7 @@ namespace kpeg
         
         m_image.setJPEGVersion( std::string( majorVersion + "." + minorVersion ) );
         
-        UInt8 densityByte;
+        kpeg::types::UInt8 densityByte;
         m_imageFile >> std::noskipws >> densityByte;
         
         std::string densityUnit = "";
@@ -207,7 +191,7 @@ namespace kpeg
         
         LOG(Logger::Level::DEBUG) << "Image density unit: " << densityUnit << std::endl;
         
-        UInt16 xDensity = 0, yDensity = 0;
+        kpeg::types::UInt16 xDensity = 0, yDensity = 0;
         
         m_imageFile.read( reinterpret_cast<char *>( &xDensity ), 2 );
         m_imageFile.read( reinterpret_cast<char *>( &yDensity ), 2 );
@@ -219,15 +203,14 @@ namespace kpeg
         LOG(Logger::Level::DEBUG) << "Vertical image density: " << yDensity << std::endl;
         
         // Ignore the image thumbnail data
-        UInt8 xThumb = 0, yThumb = 0;
+        kpeg::types::UInt8 xThumb = 0, yThumb = 0;
         m_imageFile >> std::noskipws >> xThumb >> yThumb;        
         m_imageFile.seekg( 3 * xThumb * yThumb, std::ios_base::cur );
         
         LOG(Logger::Level::DEBUG) << "Finished parsing JPEG/JFIF marker segment (APP-0) [OK]" << std::endl;
-        //std::cout << "Current file pos: " << m_imageFile.tellg() << std::endl;
     }
     
-    void JPEGDecoder::parseQuantizationTable()
+    void Decoder::parseQuantizationTable()
     {
         if ( !m_imageFile.is_open() || !m_imageFile.good() )
         {
@@ -237,18 +220,15 @@ namespace kpeg
         
         LOG(Logger::Level::DEBUG) << "Parsing quantization table segment..." << std::endl;
         
-        UInt16 lenByte = 0;
-        UInt8 PqTq;
-        UInt8 Qi;
-        //int QTNumber = 0;
+        kpeg::types::UInt16 lenByte = 0;
+        kpeg::types::UInt8 PqTq;
+        kpeg::types::UInt8 Qi;
         
         m_imageFile.read( reinterpret_cast<char *>( &lenByte ), 2 );
         lenByte = htons( lenByte );
         LOG(Logger::Level::DEBUG) << "Quantization table segment length: " << (int)lenByte << std::endl;
         
         lenByte -= 2;
-        
-        //std::cout << "ZZZZ: " << int(lenByte) / 65 << std::endl;
         
         for ( int qt = 0; qt < int(lenByte) / 65; ++qt )
         {
@@ -262,43 +242,18 @@ namespace kpeg
             
             m_QTables.push_back({});
             
-            // Populate quantization table #QTtable
-            
+            // Populate quantization table #QTtable            
             for ( auto i = 0; i < 64; ++i )
             {
                 m_imageFile >> std::noskipws >> Qi;
-                
-//                 if ( Qi == JFIF_BYTE_FF )
-//                 {
-//                     LOG(Logger::Level::ERROR) << "Unexpected start of marker at offest: " << (int)m_imageFile.tellg() - 1 << std::endl;
-//                     return;
-//                 }
-                
-                m_QTables[QTtable].push_back( (UInt16)Qi );
+                m_QTables[QTtable].push_back( (kpeg::types::UInt16)Qi );
             }
         }
         
-//         int qt[8][8];
-//         for ( auto i = 0; i < m_QTables[QTtable].size(); ++i )
-//         {
-//             auto y = zzOrderToMatIndices( i ).first;
-//             auto x = zzOrderToMatIndices( i ).second;            
-//             qt[y][x] = m_QTables[QTtable][i];
-//             //std::cout << i << std::endl;
-//         }
-//         
-//         for ( auto i = 0; i < 8; ++i)
-//         {
-//             for ( auto j = 0; j < 8; ++j)
-//                 std::cout << qt[i][j] << " ";
-//             std::cout << std::endl;
-//         }
-        
         LOG(Logger::Level::DEBUG) << "Finished parsing quantization table segment [OK]" << std::endl;
-//         printCurrPos();
     }
     
-    JPEGDecoder::ResultCode JPEGDecoder::parseSOF0Segment()
+    Decoder::ResultCode Decoder::parseSOF0Segment()
     {
         if ( !m_imageFile.is_open() || !m_imageFile.good() )
         {
@@ -308,8 +263,8 @@ namespace kpeg
         
         LOG(Logger::Level::DEBUG) << "Parsing SOF-0 segment..." << std::endl;
         
-        UInt16 lenByte, imgHeight, imgWidth;
-        UInt8 precision, compCount;
+        kpeg::types::UInt16 lenByte, imgHeight, imgWidth;
+        kpeg::types::UInt8 precision, compCount;
         
         m_imageFile.read( reinterpret_cast<char *>( &lenByte ), 2 );
         lenByte = htons( lenByte );
@@ -332,7 +287,7 @@ namespace kpeg
         
         LOG(Logger::Level::DEBUG) << "No. of components: " << (int)compCount << std::endl;
         
-        UInt8 compID = 0, sampFactor = 0, QTNo = 0;
+        kpeg::types::UInt8 compID = 0, sampFactor = 0, QTNo = 0;
         
         bool isNonSampled = true;
         
@@ -355,15 +310,13 @@ namespace kpeg
             return ResultCode::TERMINATE;
         }
         
-        LOG(Logger::Level::DEBUG) << "Finished parsing SOF-0 segment [OK]" << std::endl;
-        //printCurrPos();
-        
+        LOG(Logger::Level::DEBUG) << "Finished parsing SOF-0 segment [OK]" << std::endl;        
         m_image.setDimensions( imgWidth, imgHeight );
         
         return ResultCode::SUCCESS;
     }
     
-    void JPEGDecoder::parseHuffmanTable()
+    void Decoder::parseHuffmanTable()
     {
         if ( !m_imageFile.is_open() || !m_imageFile.good() )
         {
@@ -373,18 +326,17 @@ namespace kpeg
         
         LOG(Logger::Level::DEBUG) << "Parsing Huffman table segment..." << std::endl;
         
-        UInt16 len;
+        kpeg::types::UInt16 len;
         m_imageFile.read( reinterpret_cast<char *>( &len ), 2 );
         len = htons( len );
         
         LOG(Logger::Level::DEBUG) << "Huffman table length: " << (int)len << std::endl;
         
         int segmentEnd = (int)m_imageFile.tellg() + len - 2;
-        //len -= 2;
         
         while ( m_imageFile.tellg() < segmentEnd )
         {
-            UInt8 htinfo;
+            kpeg::types::UInt8 htinfo;
             m_imageFile >> std::noskipws >> htinfo;
             
             int HTType = int( (htinfo & 0x10) >> 4 );
@@ -394,15 +346,11 @@ namespace kpeg
             LOG(Logger::Level::DEBUG) << "Huffman table #: " << HTNumber << std::endl;
             
             int totalSymbolCount = 0;
-            UInt8 symbolCount;
+            kpeg::types::UInt8 symbolCount;
             
-            //LOG(Logger::Level::DEBUG) << "Displaying Huffman table, (Type: " << HTType << ", #: " << HTNumber << ") symbol counts... " << std::endl;
             for ( auto i = 1; i <= 16; ++i )
             {
                 m_imageFile >> std::noskipws >> symbolCount;
-    //             LOG(Logger::Level::DEBUG) << "Huffman table, (Type:" << HTType << ",#:" << HTNumber << "), Length=" << i << " : " << (int)symbolCount << std::endl;
-                //LOG(Logger::Level::DEBUG) << "Code length=" << i << " : " << (int)symbolCount << std::endl;
-                
                 m_huffmanTable[HTType][HTNumber][i-1].first = (int)symbolCount;
                 totalSymbolCount += (int)symbolCount;
             }
@@ -410,9 +358,8 @@ namespace kpeg
             int syms = 0;
             for ( auto i = 0; syms < totalSymbolCount;  )
             {
-                UInt8 code;
+                kpeg::types::UInt8 code;
                 m_imageFile >> std::noskipws >> code;
-                //LOG(Logger::Level::DEBUG) << "Huffman code: 0x" << std::hex << std::setfill('0') << std::setw(2) << std::setprecision(8) << (int)code << "(" << std::bitset<8>(int(code)) << ")" << std::endl;
                 
                 if ( m_huffmanTable[HTType][HTNumber][i].first == 0 )
                 {
@@ -440,7 +387,7 @@ namespace kpeg
                     totalCodes++;
                 }
                 
-                LOG(Logger::Level::DEBUG) << "Code length: " << i+1 // m_huffmanTable[HTType][HTNumber][i].first
+                LOG(Logger::Level::DEBUG) << "Code length: " << i+1
                                         << ", Symbol count: " << m_huffmanTable[HTType][HTNumber][i].second.size()
                                         << ", Symbols: " << codeStr << std::endl;
             }
@@ -454,23 +401,10 @@ namespace kpeg
         }
         
         LOG(Logger::Level::DEBUG) << "Finished parsing Huffman table segment [OK]" << std::endl;
-        
-//          printCurrPos();
     }
     
-    void JPEGDecoder::parseSOSSegment()
+    void Decoder::parseSOSSegment()
     {
-//         if ( m_huffTableCount < 4 )
-//         {
-//             //m_huffmanTable
-//             //return;
-//             m_huffmanTable[1][0] = m_huffmanTable[0][1];
-//             m_huffmanTable[1][1] = m_huffmanTable[0][1];
-//             
-//             m_huffmanTree[1][0].constructHuffmanTree( m_huffmanTable[1][0] );
-//             m_huffmanTree[1][1].constructHuffmanTree( m_huffmanTable[1][1] );
-//         }
-        
         if ( !m_imageFile.is_open() || !m_imageFile.good() )
         {
             LOG(Logger::Level::ERROR) << "Unable scan image file: \'" + m_filename + "\'" << std::endl;
@@ -479,15 +413,15 @@ namespace kpeg
         
         LOG(Logger::Level::DEBUG) << "Parsing SOS segment..." << std::endl;
         
-        UInt16 len;
+        kpeg::types::UInt16 len;
         
         m_imageFile.read( reinterpret_cast<char *>( &len ), 2 );
         len = htons( len );
         
         LOG(Logger::Level::DEBUG) << "SOS segment length: " << len << std::endl;
         
-        UInt8 compCount; // Number of components
-        UInt16 compInfo; // Component ID and Huffman table used
+        kpeg::types::UInt8 compCount; // Number of components
+        kpeg::types::UInt16 compInfo; // Component ID and Huffman table used
         
         m_imageFile >> std::noskipws >> compCount;
         
@@ -504,13 +438,13 @@ namespace kpeg
             m_imageFile.read( reinterpret_cast<char *>( &compInfo ), 2 );
             compInfo = htons( compInfo );
             
-            UInt8 cID = compInfo >> 8; // 1st byte denotes component ID 
+            kpeg::types::UInt8 cID = compInfo >> 8; // 1st byte denotes component ID 
             
             // 2nd byte denotes the Huffman table used:
             // Bits 7 to 4: DC Table #(0 to 3)
             // Bits 3 to 0: AC Table #(0 to 3)
-            UInt8 DCTableNum = ( compInfo & 0x00f0 ) >> 4;
-            UInt8 ACTableNum = ( compInfo & 0x000f );
+            kpeg::types::UInt8 DCTableNum = ( compInfo & 0x00f0 ) >> 4;
+            kpeg::types::UInt8 ACTableNum = ( compInfo & 0x000f );
             
             LOG(Logger::Level::DEBUG) << "Component ID: " << (int)cID << ", DC Table #: " << (int)DCTableNum << ", AC Table #: " << (int)ACTableNum << std::endl;
         }
@@ -518,18 +452,16 @@ namespace kpeg
         // Skip the next three bytes
         for ( auto i = 0; i < 3; ++i )
         {
-            UInt8 byte;
+            kpeg::types::UInt8 byte;
             m_imageFile >> std::noskipws >> byte;
         }
-        
-//         printCurrPos();
         
         LOG(Logger::Level::DEBUG) << "Finished parsing SOS segment [OK]" << std::endl;
         
         scanImageData();
     }
     
-    void JPEGDecoder::scanImageData()
+    void Decoder::scanImageData()
     {
         if ( !m_imageFile.is_open() || !m_imageFile.good() )
         {
@@ -539,13 +471,13 @@ namespace kpeg
         
         LOG(Logger::Level::DEBUG) << "Scanning image data..." << std::endl;
         
-        UInt8 byte;
+        kpeg::types::UInt8 byte;
         
         while ( m_imageFile >> std::noskipws >> byte )
         {
             if ( byte == JFIF_BYTE_FF )
             {
-                UInt8 prevByte = byte;
+                kpeg::types::UInt8 prevByte = byte;
                 
                 m_imageFile >> std::noskipws >> byte;
                 
@@ -560,7 +492,6 @@ namespace kpeg
                                           << std::setprecision(8) << (int)prevByte
                                           << ", Bits: " << bits1 << std::endl;
                                           
-                //m_scanData.push_back( bits1 );
                 m_scanData.append( bits1.to_string() );
             }
             
@@ -569,14 +500,13 @@ namespace kpeg
                                       << std::setprecision(8) << (int)byte
                                       << ", Bits: " << bits << std::endl;
             
-            //m_scanData.push_back( std::move( bits ) );
             m_scanData.append( bits.to_string() );
         }
         
         LOG(Logger::Level::DEBUG) << "Finished scanning image data [OK]" << std::endl;
     }
     
-    void JPEGDecoder::parseComment()
+    void Decoder::parseComment()
     {
         if ( !m_imageFile.is_open() || !m_imageFile.good() )
         {
@@ -586,8 +516,8 @@ namespace kpeg
         
         LOG(Logger::Level::DEBUG) << "Parsing comment segment..." << std::endl;
         
-        UInt16 lenByte = 0;
-        UInt8 byte = 0;
+        kpeg::types::UInt16 lenByte = 0;
+        kpeg::types::UInt8 byte = 0;
         std::string comment;
         
         m_imageFile.read( reinterpret_cast<char *>(&lenByte), 2 );
@@ -607,18 +537,16 @@ namespace kpeg
                 return;
             }
             
-            //std::cout << "Count: " << i << ", Byte: " << (unsigned char)byte << ", Position: " << (std::size_t)m_imageFile.tellg() - 1 <<  std::endl;
             comment.push_back( static_cast<char>(byte) );
         }
         
         LOG(Logger::Level::DEBUG) << "Comment segment content: " << comment << std::endl;
         LOG(Logger::Level::DEBUG) << "Finished parsing comment segment [OK]" << std::endl;
-        //std::cout << "Current file pos: " << m_imageFile.tellg() << std::endl;
         
         m_image.setComment( comment );
     }
     
-    void JPEGDecoder::byteStuffScanData()
+    void Decoder::byteStuffScanData()
     {
         if ( m_scanData.empty() )
         {
@@ -652,7 +580,7 @@ namespace kpeg
         LOG(Logger::Level::DEBUG) << "Finished byte stuffing image scan data [OK]" << std::endl;
     }
     
-    void JPEGDecoder::decodeScanData()
+    void Decoder::decodeScanData()
     {
         if ( m_scanData.empty() )
         {
@@ -669,15 +597,11 @@ namespace kpeg
         
         int MCUCount = ( m_image.getWidth() * m_image.getHeight() ) / 64;
         
-//         int maxBitLength = m_scanData.size();
-        
         m_MCU.clear();
-        //m_MCU.resize( MCUCount );
         LOG(Logger::Level::DEBUG) << "MCU count: " << MCUCount << std::endl;
         
         int k = 0; // The index of the next bit to be scanned
         
-        // TODO: Fix redundancy in this part
         for ( auto i = 0; i < MCUCount; ++i )
         {
             LOG(Logger::Level::DEBUG) << "Decoding MCU-" << i + 1 << "..." << std::endl;
@@ -699,25 +623,22 @@ namespace kpeg
                 std::string bitsScanned = ""; // Initially no bits are scanned
                 
                 // Firstly, decode the Y / DC coefficient
-                LOG(Logger::Level::DEBUG) << "Decoding MCU-" << i + 1 << ": " << component[compID] << "/" << type[HT_DC] << std::endl;
+                LOG(Logger::Level::DEBUG) << "Decoding MCU-" << i + 1 << ": " << component[compID] << "/" << type[kpeg::types::HT_DC] << std::endl;
                 
                 int HuffTableID = compID == 0 ? 0 : 1;
                 
                 while ( 1 )
                 {       
                     bitsScanned += m_scanData[k];
-                    auto value = m_huffmanTree[HT_DC][HuffTableID].contains( bitsScanned );
+                    auto value = m_huffmanTree[kpeg::types::HT_DC][HuffTableID].contains( bitsScanned );
                     
-                    if ( !isStringWhiteSpace( value ) )
+                    if ( !utils::isStringWhiteSpace( value ) )
                     {
                         if ( value != "EOB" )
                         {   
-                            int zeroCount = UInt8( std::stoi( value ) ) >> 4 ;
-                            int category = UInt8( std::stoi( value ) ) & 0x0F;
-                            //auto e = m_scanData.substr( k + 1, category );
+                            int zeroCount = kpeg::types::UInt8( std::stoi( value ) ) >> 4 ;
+                            int category = kpeg::types::UInt8( std::stoi( value ) ) & 0x0F;
                             int DCCoeff = bitStringtoValue( m_scanData.substr( k + 1, category ) );
-                            
-                            //LOG(Logger::Level::DEBUG) << "MCU-" << i + 1 << ": " << component[compID] << "/" << type[HT_DC] << ": ( " << zeroCount << ", " << DCCoeff << " )" << std::endl;
                             
                             k += category + 1;
                             bitsScanned = "";
@@ -730,12 +651,8 @@ namespace kpeg
                         
                         else
                         {
-                            //LOG(Logger::Level::DEBUG) << "MCU-" << i + 1 << ": " << component[compID] << "/" << type[HT_DC] << ": EOB encountered" << std::endl;
                             bitsScanned = "";
                             k++;
-                            
-                            //RLE.push_back( 0 );
-                            //RLE.push_back( 0 );
                             
                             RLE[compID].push_back( 0 );
                             RLE[compID].push_back( 0 );
@@ -748,14 +665,13 @@ namespace kpeg
                 }
                 
                 // Then decode the AC coefficients
-                LOG(Logger::Level::DEBUG) << "Decoding MCU-" << i + 1 << ": " << component[compID] << "/" << type[HT_AC] << std::endl;
+                LOG(Logger::Level::DEBUG) << "Decoding MCU-" << i + 1 << ": " << component[compID] << "/" << type[kpeg::types::HT_AC] << std::endl;
                 bitsScanned = "";
                 int ACCodesCount = 0;
                                 
                 while ( 1 )
                 {   
-                    // If 63 AC codes have been encountered, this block is done, move onto next block;
-                    
+                    // If 63 AC codes have been encountered, this block is done, move onto next block                    
                     if ( ACCodesCount  == 63 )
                     {
                         break;
@@ -763,18 +679,15 @@ namespace kpeg
                     
                     // Append the k-th bit to the bits scanned so far
                     bitsScanned += m_scanData[k];
-                    auto value = m_huffmanTree[HT_AC][HuffTableID].contains( bitsScanned );
+                    auto value = m_huffmanTree[kpeg::types::HT_AC][HuffTableID].contains( bitsScanned );
                     
-                    if ( !isStringWhiteSpace( value ) )
+                    if ( !utils::isStringWhiteSpace( value ) )
                     {
                         if ( value != "EOB" )
                         {
-                            int zeroCount = UInt8( std::stoi( value ) ) >> 4 ;
-                            int category = UInt8( std::stoi( value ) ) & 0x0F;
-                            //auto e = m_scanData.substr( k + 1, category );
+                            int zeroCount = kpeg::types::UInt8( std::stoi( value ) ) >> 4 ;
+                            int category = kpeg::types::UInt8( std::stoi( value ) ) & 0x0F;
                             int ACCoeff = bitStringtoValue( m_scanData.substr( k + 1, category ) );
-                            
-                            //LOG(Logger::Level::DEBUG) << "AC Code#: " << ACCodesCount + 1 << ", MCU-" << i + 1 << ": " << component[compID] << "/" << type[HT_AC] << ": ( " << zeroCount << ", " << ACCoeff << " )" << std::endl;
                             
                             k += category + 1;
                             bitsScanned = "";
@@ -787,7 +700,6 @@ namespace kpeg
                         
                         else
                         {
-                            //LOG(Logger::Level::DEBUG) << "MCU-" << i + 1 << ": " << component[compID] << "/" << type[HT_AC] << ": EOB encountered" << std::endl;
                             bitsScanned = "";
                             k++;
                             
@@ -824,22 +736,6 @@ namespace kpeg
                     }
                 }
             }
-            
-//             if ( i == 62 )
-//             {
-//                 for ( auto&& rle : RLE )
-//                 {
-//                     std::string r = "";
-//                     for ( auto a = 0; a <= rle.size() - 2; a += 2 )
-//                     {
-//                         std::stringstream ss;
-//                         ss << "( " << rle[a] << ", " << rle[a + 1] << ") ";
-//                         r += ss.str();
-//                     }
-//                     
-//                     LOG(Logger::Level::DEBUG) << "RLE 6,7: " << r << std::endl;
-//                 }
-//             }
             
             // Construct the MCU block from the RLE &
             // quantization tables to a 8x8 matrix

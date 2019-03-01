@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "Transform.hpp"
 
 namespace kpeg
@@ -41,5 +43,57 @@ namespace kpeg
         };
         
         return matOrder[row][column];
+    }
+
+    const std::string valueToBitString(const kpeg::types::Int16 value)
+    {
+        if (value == 0x0000)
+            return "0";
+        
+        kpeg::types::Int16 val = value;
+        int bits = (std::log2(std::abs(value))) + 1;
+        std::string bitStr(bits, '0');
+        
+        if (val < 0)
+        {
+            kpeg::types::UInt16 delta = 0xFFFF >> (16 - bits);
+            val += delta;
+            val = std::abs(val);
+        }
+        
+        int i = bitStr.size() - 1;
+        while (val > 0)
+        {
+            bitStr[i--] = '0' + val % 2;
+            val /= 2;
+        }
+        
+        return bitStr;
+    }
+    
+    const kpeg::types::Int16 bitStringtoValue(const std::string& bitStr)
+    {
+        if (bitStr == "")
+            return 0x0000;
+        
+        kpeg::types::Int16 value = 0x0000;
+        
+        char sign = bitStr[0];
+        int factor = sign == '0' ? -1 : 1;
+            
+        for (auto i = 0; i < bitStr.size(); ++i)
+        {
+            if (bitStr[i] == sign)
+                value += kpeg::types::Int16(std::pow(2, bitStr.size() - 1 - i));
+        }
+        
+        return factor * value;
+    }
+    
+    const kpeg::types::Int16 getValueCategory(const kpeg::types::Int16 value)
+    {
+        if (value == 0x0000)
+            return 0;
+        return std::log2(std::abs(value)) + 1;
     }
 }

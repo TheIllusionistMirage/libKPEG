@@ -25,7 +25,7 @@ file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp" "${PROJECT_SOURCE_DIR}/*.cpp
 include_directories("${PROJECT_SOURCE_DIR}/include/")
 
 # Compile and generate the executable
-add_executable(kpeg main.cpp src/Encoder.cpp src/Decoder.cpp src/Image.cpp src/Logger.cpp src/HuffmanTree.cpp src/MCU.cpp src/Transform.cpp) #${SOURCES})
+add_executable(kpeg main.cpp src/Decoder.cpp src/Image.cpp src/Logger.cpp src/HuffmanTree.cpp src/MCU.cpp src/Transform.cpp) #${SOURCES})
 #add_executable(kpeg ${SOURCES})
 
 set_property(TARGET kpeg PROPERTY CXX_STANDARD 14)

@@ -10,3 +10,6 @@ obj/
 *.cbp
 *.depend
 *.layout
+
+# VS COde files
+.vscode

@@ -1,14 +1,10 @@
-/**
- * @file Logger.hpp
- * @author Koushtav Chakrabarty (koustav@fleptic.eu)
- * @date 14th Oct, 2017, 07:30 PM IST 
- * @brief The Logger module provides message logging facility to K-PEG.
- * 
- * The <b>Logging</b> module consists of a singleton logging class,
- * a teestream and macros for logging messages at various levels.
- * 
- * The message levels are error, info and debug messages.
- */
+/// Logger module
+///
+/// Provides message logging facility. It consists of a
+/// singleton logging class, a teestream and macros for
+/// logging messages at various levels.
+///
+/// The message levels are ERROR, INFO and DEBUG messages.
 
 #ifndef LOGGER_HPP
 #define LOGGER_HPP
@@ -18,13 +14,6 @@
 #include <memory>
 #include <string>
 #include <cstring>
-
-// #ifndef __FILENAME__
-//     /**
-//     * Fetch the filename which invokes the logger
-//     */
-//     #define __FILENAME__ __FILE__
-// #endif
 
 /**
 * Fetch the filename which invokes the logger

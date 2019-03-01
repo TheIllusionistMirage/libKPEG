@@ -1,3 +1,5 @@
+// Implementaion of the Huffman tree abstraction
+
 #include <iomanip>
 
 #include "HuffmanTree.hpp"
@@ -6,7 +8,7 @@
 
 namespace kpeg
 {
-    void insertLeft( NodePtr node, const UInt16 value )
+    void insertLeft( NodePtr node, const kpeg::types::UInt16 value )
     {
         if ( node == nullptr )
             return;
@@ -25,7 +27,7 @@ namespace kpeg
         lNode->value = value;
     }
     
-    void insertRight( NodePtr node, const UInt16 value )
+    void insertRight( NodePtr node, const kpeg::types::UInt16 value )
     {
         if ( node == nullptr )
             return;
@@ -86,7 +88,6 @@ namespace kpeg
         inOrder(node->lChild);
         
         if ( node->code != "" && node->leaf )
-            //std::cout << node->code << ": 0x" << std::hex << std::setfill('0') << std::setw(2) << std::setprecision(16) << node->value << std::endl;
             LOG(Logger::Level::DEBUG) << "Symbol: 0x" << std::hex << std::setfill('0') << std::setw(2) << std::setprecision(16) << node->value << ", Code: " << node->code << std::endl;
         
         inOrder(node->rChild);
@@ -95,15 +96,14 @@ namespace kpeg
     HuffmanTree::HuffmanTree() :
      m_root{nullptr}
     {
-//         LOG(Logger::Level::DEBUG) << "Constructed empty Huffman tree" << std::endl;
     }
     
-    HuffmanTree::HuffmanTree( const kpeg::HuffmanTable& htable )
+    HuffmanTree::HuffmanTree( const kpeg::types::HuffmanTable& htable )
     {
         constructHuffmanTree( htable );
     }
     
-    void HuffmanTree::constructHuffmanTree( const kpeg::HuffmanTable& htable )
+    void HuffmanTree::constructHuffmanTree( const kpeg::types::HuffmanTable& htable )
     {
         LOG(Logger::Level::DEBUG) << "Constructing Huffman tree with specified Huffman table..." << std::endl;
         
@@ -163,7 +163,7 @@ namespace kpeg
     
     const std::string HuffmanTree::contains( const std::string& huffCode )
     {
-        if ( isStringWhiteSpace( huffCode ) )
+        if ( utils::isStringWhiteSpace( huffCode ) )
         {
             LOG(Logger::Level::ERROR) << "[ FATAL ] Invalid huffman code, possibly corrupt JFIF data stream!" << std::endl;
             return "";

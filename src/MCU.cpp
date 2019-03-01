@@ -8,60 +8,20 @@
 
 namespace kpeg
 {
-//     const std::pair<const int, const int> zzOrderToMatIndices( const int zzindex )
-//     {
-//         static const std::pair<const int, const int> zzorder[64] =
-//         {
-//             {0,0},
-//             {0,1}, {1,0},         
-//             {2,0}, {1,1}, {0,2},
-//             {0,3}, {1,2}, {2,1}, {3,0},
-//             {4,0}, {3,1}, {2,2}, {1,3}, {0,4},
-//             {0,5}, {1,4}, {2,3}, {3,2}, {4,1}, {5,0},
-//             {6,0}, {5,1}, {4,2}, {3,3}, {2,4}, {1,5}, {0,6},
-//             {0,7}, {1,6}, {2,5}, {3,4}, {4,3}, {5,2}, {6,1}, {7,0},
-//             {7,1}, {6,2}, {5,3}, {4,4}, {3,5}, {2,6}, {1,7},
-//             {2,7}, {3,6}, {4,5}, {5,4}, {6,3}, {7,2},
-//             {7,3}, {6,4}, {5,5}, {4,6}, {3,7},
-//             {4,7}, {5,6}, {6,5}, {7,4},
-//             {7,5}, {6,6}, {5,7},
-//             {6,7}, {7,6},
-//             {7,7}
-//         };
-//         
-//         return zzorder[zzindex];
-//     }
-//     
-//     const int matIndicesToZZOrder( const int row, const int column )
-//     {
-//         static const int matOrder[8][8] = 
-//         {
-//             {  0,  1,  5,  6, 14, 16, 27, 28 },
-//             {  2,  4,  7, 13, 16, 26, 29, 42 },
-//             {  3,  8, 12, 17, 25, 30, 41, 43 },
-//             {  9, 11, 18, 24, 31, 40, 44, 53 },
-//             { 10, 19, 23, 32, 39, 45, 52, 54 },
-//             { 20, 22, 33, 38, 46, 51, 55, 60 },
-//             { 21, 34, 37, 47, 50, 56, 59, 61 },
-//             { 35, 36, 48, 49, 57, 58, 62, 63 }
-//         };
-//         
-//         return matOrder[row][column];
-//     }
     int MCU::m_MCUCount = 0;
-    std::vector<std::vector<UInt16>> MCU::m_QTables = {};
+    std::vector<std::vector<kpeg::types::UInt16>> MCU::m_QTables = {};
     int MCU::DCDiff[3] = { 0, 0, 0 };
     
     MCU::MCU()
     {   
     }
             
-    MCU::MCU( const std::array<std::vector<int>, 3>& compRLE, const std::vector<std::vector<UInt16>>& QTables )
+    MCU::MCU( const std::array<std::vector<int>, 3>& compRLE, const std::vector<std::vector<kpeg::types::UInt16>>& QTables )
     {
         constructMCU( compRLE, QTables );
     }
     
-    void MCU::constructMCU( const std::array<std::vector<int>, 3>& compRLE, const std::vector<std::vector<UInt16>>& QTables )
+    void MCU::constructMCU( const std::array<std::vector<int>, 3>& compRLE, const std::vector<std::vector<kpeg::types::UInt16>>& QTables )
     {
         m_QTables = QTables;
         
@@ -69,26 +29,11 @@ namespace kpeg
         
         LOG(Logger::Level::DEBUG) << "Constructing MCU: " << m_MCUCount << "..." << std::endl;
         
-//         for ( auto&& rle : compRLE )
-//         {
-//             std::string rleStr = "";
-//             for ( auto v = 0; v < rle.size(); v += 2 )
-//             {
-//                 std::stringstream ss;
-//                 ss << "(" << rle[v] << ", " << rle[v + 1] << ") ";
-//                 rleStr += ss.str();
-//             }
-//             
-//             LOG(Logger::Level::DEBUG) << "RLE decoded data: " << rleStr << std::endl;
-//         }
-        
         const char* component[] = { "Y (Luminance)", "Cb (Chrominance)", "Cr (Chrominance)" };
         const char* type[] = { "DC", "AC" };    
         
         for ( int compID = 0; compID < 3; compID++ )
         {
-            //LOG(Logger::Level::DEBUG) << "Constructing matrix for: MCU-" << m_MCUCount << ": " << component[compID] << "..." << std::endl;
-            
             // Initialize with all zeros
             std::array<int, 64> zzOrder;            
             std::fill( zzOrder.begin(), zzOrder.end(), 0 );
@@ -118,28 +63,6 @@ namespace kpeg
                 
                 m_8x8block[compID][ coords.first ][ coords.second ] = zzOrder[i];
             }
-            
-//             for ( auto&& row : m_8x8block[compID] )
-//             {
-//                 for ( auto&& val : row )
-//                     std::cout << val << "\t";
-//                 std::cout << std::endl;
-//             }
-//             std::cout << std::endl;
-
-//             std::string matrix = "";
-//             for ( auto&& row : m_8x8block[compID] )
-//             {
-//                 for ( auto&& val : row )
-//                 {
-//                     std::stringstream ss;
-//                     ss << std::setw(7) << std::setfill(' ') << val << "";
-//                     matrix += ss.str();
-//                 }
-//                 matrix += "\n";
-//             }
-//             
-//             LOG(Logger::Level::DEBUG) << "DCT Matrix: " << component[compID] << ":-\n" << matrix << std::endl;
         }
         
         computeIDCT();
@@ -182,10 +105,8 @@ namespace kpeg
                     float sum = 0.0;
                     
                     for ( int u = 0; u < 8; ++u )
-                    //for ( int v = 0; v < 8; ++v )
                     {
                         for ( int v = 0; v < 8; ++v )
-                        //for ( int u = 0; u < 8; ++u )
                         {
                             float Cu = u == 0 ? 1.0 / std::sqrt(2.0) : 1.0;
                             float Cv = v == 0 ? 1.0 / std::sqrt(2.0) : 1.0;
@@ -199,18 +120,6 @@ namespace kpeg
                 }
             }
         }
-        
-//         for (auto&& mat: icoeffs )
-//         {
-//             for ( auto&& row : mat )
-//             {
-//                 for ( auto&& v : row )
-//                     //std::cout << std::roundl( v ) + 128 << "\t";
-//                     std::cout << std::roundl( v ) << "\t";
-//                 std::cout << std::endl;
-//             }
-//             std::cout << std::endl;
-//         }
 
         LOG(Logger::Level::DEBUG) << "IDCT of MCU: " << m_MCUCount << " complete [OK]" << std::endl;
     }
@@ -229,17 +138,6 @@ namespace kpeg
                 }
             }
         }
-        
-//         for (auto&& mat: m_8x8block )
-//         {
-//             for ( auto&& row : mat )
-//             {
-//                 for ( auto&& v : row )
-//                     std::cout << v << "\t";
-//                 std::cout << std::endl;
-//             }
-//             std::cout << std::endl;
-//         }
         
         LOG(Logger::Level::DEBUG) << "Level shift on MCU: " << m_MCUCount << " complete [OK]" << std::endl;
     }
@@ -267,12 +165,7 @@ namespace kpeg
                 m_8x8block[0][y][x] = R;
                 m_8x8block[1][y][x] = G;
                 m_8x8block[2][y][x] = B;
-                
-//                 std::cout << "(" << m_8x8block[0][y][x]
-//                           << "," << m_8x8block[1][y][x] << ","
-//                           << m_8x8block[2][y][x] << ") ";
             }
-//             std::cout << std::endl;
         }
         
         LOG(Logger::Level::DEBUG) << "Colorspace conversion for MCU: " << m_MCUCount << " done [OK]" << std::endl;
